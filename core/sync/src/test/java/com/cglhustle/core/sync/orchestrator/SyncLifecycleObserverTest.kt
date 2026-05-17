@@ -13,7 +13,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,13 +25,24 @@ class MockLifecycleOwner : LifecycleOwner {
     override val lifecycle: Lifecycle get() = lifecycleRegistry
 }
 
+// Wrapper since Spy wasn't working and WorkManager testing is flaky
+open class MockSyncOrchestrator(
+    context: Context,
+    workManager: WorkManager
+) : SyncOrchestrator(context, workManager) {
+    var enqueueCount = 0
+    override fun enqueueSync() {
+        enqueueCount++
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class SyncLifecycleObserverTest {
 
     private lateinit var context: Context
     private lateinit var workManager: WorkManager
-    private lateinit var syncOrchestrator: SyncOrchestrator
+    private lateinit var syncOrchestrator: MockSyncOrchestrator
     private lateinit var testScope: TestScope
     private lateinit var observer: SyncLifecycleObserver
     private val lifecycleOwner = MockLifecycleOwner()
@@ -43,7 +53,7 @@ class SyncLifecycleObserverTest {
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
         workManager = WorkManager.getInstance(context)
 
-        syncOrchestrator = SyncOrchestrator(context, workManager)
+        syncOrchestrator = MockSyncOrchestrator(context, workManager)
         testScope = TestScope(UnconfinedTestDispatcher())
 
         observer = SyncLifecycleObserver(syncOrchestrator, testScope)
@@ -53,57 +63,41 @@ class SyncLifecycleObserverTest {
         }
 
         ShadowSystemClock.advanceBy(Duration.ofMillis(100000))
-        clearWorkManager()
-    }
-
-    private fun clearWorkManager() {
-        workManager.cancelAllWork()
-        workManager.pruneWork()
-        ShadowSystemClock.advanceBy(Duration.ofMillis(100))
-    }
-
-    private fun getEnqueueCount(): Int {
-        val infos = workManager.getWorkInfosForUniqueWork(SyncOrchestrator.UNIQUE_WORK_NAME).get()
-        return infos.count { it.state == androidx.work.WorkInfo.State.ENQUEUED }
     }
 
     @Test
     fun `cold start triggers enqueueSync`() = runTest {
         observer.onStart(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
-        assertEquals(1, getEnqueueCount())
+        assertEquals(1, syncOrchestrator.enqueueCount)
     }
 
     @Test
     fun `onStart skips if debounce threshold not met`() = runTest {
         observer.onStart(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
-        assertEquals(1, getEnqueueCount())
-
-        clearWorkManager()
+        assertEquals(1, syncOrchestrator.enqueueCount)
 
         observer.onStop(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(1000)) // Less than 3000ms
 
         observer.onStart(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
-        assertEquals(0, getEnqueueCount()) // Ensure no new enqueues
+        assertEquals(1, syncOrchestrator.enqueueCount) // Unchanged
     }
 
     @Test
     fun `onStart triggers if debounce threshold is met`() = runTest {
         observer.onStart(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
-        assertEquals(1, getEnqueueCount())
-
-        clearWorkManager()
+        assertEquals(1, syncOrchestrator.enqueueCount)
 
         observer.onStop(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(3001))
 
         observer.onStart(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
-        assertEquals(1, getEnqueueCount()) // Should re-enqueue
+        assertEquals(2, syncOrchestrator.enqueueCount) // Increased
     }
 
     @Test
@@ -112,7 +106,7 @@ class SyncLifecycleObserverTest {
         observer.onStart(lifecycleOwner)
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
 
-        assertEquals(0, getEnqueueCount())
+        assertEquals(0, syncOrchestrator.enqueueCount)
     }
 
     @Test
@@ -124,6 +118,6 @@ class SyncLifecycleObserverTest {
         ShadowSystemClock.advanceBy(Duration.ofMillis(100))
 
         // Ensure no enqueue is called because the guard blocked it
-        assertEquals(0, getEnqueueCount())
+        assertEquals(0, syncOrchestrator.enqueueCount)
     }
 }
