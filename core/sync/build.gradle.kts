@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.cglhustle.feature.mocktest"
+    namespace = "com.cglhustle.core.sync"
     compileSdk = 34
 
     defaultConfig {
@@ -19,24 +19,20 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
-    }
 }
 
 dependencies {
-    implementation(project(":core:sync"))
+    implementation(project(":core:database"))
+    implementation(project(":core:network"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.material3)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    // WorkManager
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 }
