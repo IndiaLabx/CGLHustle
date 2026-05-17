@@ -1,0 +1,8 @@
+CREATE TYPE public.session_status AS ENUM (
+    'NOT_STARTED', 'IN_PROGRESS', 'PAUSED', 'SUBMITTED_LOCAL',
+    'SYNCED_FINAL', 'TERMINATED_CONFLICT', 'ABANDONED'
+);
+
+CREATE TYPE public.answer_mutation_type AS ENUM (
+    'SELECT', 'CLEAR', 'MARK_REVIEW', 'UNMARK_REVIEW'
+);
