@@ -31,5 +31,8 @@ data class SyncEventEntity(
     val nextRetryAt: Long?,
     val retryCount: Int,
     val lastErrorCode: String?,
-    val lastErrorAt: Long?
+    val lastErrorAt: Long?,
+
+    val lastAttemptAt: Long? = null,
+    val processingToken: String? = null
 )

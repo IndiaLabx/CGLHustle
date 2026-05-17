@@ -30,4 +30,33 @@ abstract class SyncEventDao {
 
     @Query("SELECT COUNT(*) FROM sync_events WHERE userId = :userId AND idempotencyKey = :idempotencyKey")
     abstract suspend fun checkEventExists(userId: String, idempotencyKey: String): Int
+
+    // Stale recovery: IN_FLIGHT older than 15 minutes to FAILED_RETRY
+    @Query("UPDATE sync_events SET status = :newStatus, nextRetryAt = :now + 30000 WHERE status = :currentStatus AND lastAttemptAt < :thresholdTime")
+    abstract suspend fun recoverStaleEvents(
+        thresholdTime: Long,
+        now: Long,
+        currentStatus: SyncStatus = SyncStatus.IN_FLIGHT,
+        newStatus: SyncStatus = SyncStatus.FAILED_RETRY
+    ): Int
+
+    // Claim rows: PENDING or FAILED_RETRY -> IN_FLIGHT and set processing token
+    @Query("UPDATE sync_events SET status = :newStatus, processingToken = :token, lastAttemptAt = :now WHERE id IN (:ids)")
+    abstract suspend fun claimEvents(
+        ids: List<Long>,
+        token: String,
+        now: Long,
+        newStatus: SyncStatus = SyncStatus.IN_FLIGHT
+    )
+
+    // Revert unprocessed rows: IN_FLIGHT -> PENDING and clear token
+    @Query("UPDATE sync_events SET status = :newStatus, processingToken = NULL WHERE status = :currentStatus AND processingToken = :token")
+    abstract suspend fun revertUnprocessedEvents(
+        token: String,
+        currentStatus: SyncStatus = SyncStatus.IN_FLIGHT,
+        newStatus: SyncStatus = SyncStatus.PENDING
+    ): Int
+
+    @Query("SELECT COUNT(*) FROM sync_events WHERE status IN (:statuses)")
+    abstract suspend fun countEventsWithStatus(statuses: List<SyncStatus>): Int
 }

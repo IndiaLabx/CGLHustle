@@ -35,4 +35,17 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+
+    implementation(libs.androidx.datastore.preferences)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.work.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.core.ktx)
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation(libs.room.runtime)
+    testImplementation(libs.room.ktx)
+    testImplementation("androidx.room:room-testing:2.6.1")
+    kspTest(libs.room.compiler)
 }
