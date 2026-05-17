@@ -1,6 +1,7 @@
 package com.cglhustle.core.database.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 enum class SyncStatus {
@@ -11,10 +12,16 @@ enum class SyncEventType {
     UPSERT_SESSION, UPSERT_ANSWER, MARK_COMPLETED
 }
 
-@Entity(tableName = "sync_events")
+@Entity(
+    tableName = "sync_events",
+    indices = [
+        Index(value = ["userId", "idempotencyKey"], unique = true)
+    ]
+)
 data class SyncEventEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val userId: String,
     val idempotencyKey: String,
     val eventType: SyncEventType,
     val payload: String, // JSON

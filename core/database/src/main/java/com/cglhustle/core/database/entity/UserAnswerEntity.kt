@@ -1,23 +1,28 @@
 package com.cglhustle.core.database.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.UUID
 
 enum class AnswerMutationType {
     SELECT, CLEAR, MARK_REVIEW, UNMARK_REVIEW
 }
 
-@Entity(tableName = "user_answers")
+@Entity(
+    tableName = "user_answers",
+    indices = [
+        Index(value = ["sessionId", "questionId"])
+    ]
+)
 data class UserAnswerEntity(
     @PrimaryKey
-    val eventId: UUID,
-    val supersedesEventId: UUID?,
+    val eventId: String,
+    val supersedesEventId: String?,
     val mutationType: AnswerMutationType,
 
-    val sessionId: UUID,
-    val userId: UUID,
-    val questionId: UUID,
+    val sessionId: String,
+    val userId: String,
+    val questionId: String,
 
     val selectedOption: String?,
     val isCorrect: Boolean?,

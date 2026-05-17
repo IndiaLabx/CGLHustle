@@ -1,14 +1,21 @@
 package com.cglhustle.core.database.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.UUID
 
-@Entity(tableName = "question_snapshots")
+@Entity(
+    tableName = "question_snapshots",
+    indices = [
+        Index(value = ["quizSessionId", "questionId"], unique = true)
+    ]
+)
 data class QuestionSnapshotEntity(
     @PrimaryKey
-    val id: UUID,
-    val quizSessionId: UUID,
+    val id: String,
+    val userId: String,
+    val quizSessionId: String,
+    val questionId: String,
     val contentVersion: Int,
     val snapshotHash: String,
     val sourceProject: String, // e.g., 'gk_llm'
