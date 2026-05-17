@@ -4,22 +4,20 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
 import androidx.room.Update
 import com.cglhustle.core.database.entity.QuizSessionEntity
-import java.util.UUID
 
 @Dao
-interface QuizSessionDao {
+abstract class QuizSessionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSession(session: QuizSessionEntity)
+    abstract suspend fun insertSession(session: QuizSessionEntity)
 
     @Update
-    suspend fun updateSession(session: QuizSessionEntity)
+    abstract suspend fun updateSession(session: QuizSessionEntity)
 
     @Query("SELECT * FROM quiz_sessions WHERE sessionId = :sessionId")
-    suspend fun getSessionById(sessionId: UUID): QuizSessionEntity?
+    abstract suspend fun getSessionById(sessionId: String): QuizSessionEntity?
 
     @Query("SELECT * FROM quiz_sessions WHERE userId = :userId")
-    suspend fun getSessionsByUser(userId: UUID): List<QuizSessionEntity>
+    abstract suspend fun getSessionsByUser(userId: String): List<QuizSessionEntity>
 }

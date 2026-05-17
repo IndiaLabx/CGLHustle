@@ -3,6 +3,7 @@ package com.cglhustle.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.cglhustle.core.database.CglHustleDatabase
+import com.cglhustle.core.database.dao.QuestionSnapshotDao
 import com.cglhustle.core.database.dao.QuizSessionDao
 import com.cglhustle.core.database.dao.SyncEventDao
 import com.cglhustle.core.database.dao.UserAnswerDao
@@ -35,4 +36,7 @@ object DatabaseModule {
 
     @Provides
     fun provideUserAnswerDao(db: CglHustleDatabase): UserAnswerDao = db.userAnswerDao()
+
+    @Provides
+    fun provideQuestionSnapshotDao(db: CglHustleDatabase): QuestionSnapshotDao = db.questionSnapshotDao()
 }
