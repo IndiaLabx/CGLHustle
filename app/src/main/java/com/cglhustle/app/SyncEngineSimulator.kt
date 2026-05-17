@@ -29,6 +29,7 @@ class SyncEngineSimulator(
             // 1. User answers Question 1 on Device A (Offline)
             val answerPayload1 = """{"questionId":"q1", "selectedOption":"A", "attemptSequence":1}"""
             val event1 = SyncEventEntity(
+                userId = "user_1",
                 idempotencyKey = "user_1_session_1_q1_1_event1",
                 eventType = SyncEventType.UPSERT_ANSWER,
                 payload = answerPayload1,
@@ -45,6 +46,7 @@ class SyncEngineSimulator(
             // 2. User changes Answer on Device A (Offline) - Same attempt sequence, but newer event
             val answerPayload2 = """{"questionId":"q1", "selectedOption":"B", "attemptSequence":2}"""
             val event2 = SyncEventEntity(
+                userId = "user_1",
                 idempotencyKey = "user_1_session_1_q1_2_event2",
                 eventType = SyncEventType.UPSERT_ANSWER,
                 payload = answerPayload2,
@@ -61,6 +63,7 @@ class SyncEngineSimulator(
             // 3. User finishes and submits the test
             val completePayload = """{"sessionId":"session_1", "status":"SUBMITTED_LOCAL"}"""
             val completeEvent = SyncEventEntity(
+                userId = "user_1",
                 idempotencyKey = "user_1_session_1_complete",
                 eventType = SyncEventType.MARK_COMPLETED,
                 payload = completePayload,
