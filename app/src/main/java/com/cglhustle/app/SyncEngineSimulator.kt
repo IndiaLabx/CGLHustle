@@ -9,7 +9,7 @@ import com.cglhustle.core.database.dao.SyncEventDao
 import com.cglhustle.core.database.entity.SyncEventEntity
 import com.cglhustle.core.database.entity.SyncEventType
 import com.cglhustle.core.database.entity.SyncStatus
-import com.cglhustle.core.network.sync.SyncWorker
+import com.cglhustle.core.sync.worker.OutboxSyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -79,7 +79,7 @@ class SyncEngineSimulator(
 
             // 4. Trigger SyncWorker
             Log.d("SyncEngineSimulator", "4. Network restored. Triggering SyncWorker...")
-            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>().build()
+            val syncRequest = OneTimeWorkRequestBuilder<OutboxSyncWorker>().build()
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "sync_work",
                 ExistingWorkPolicy.REPLACE,
