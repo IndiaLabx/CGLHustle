@@ -1,0 +1,13 @@
+# Acceptance Test Matrix
+
+This matrix defines the acceptance tests required to validate the CGL Hustle sync protocol and error recovery logic.
+
+| ID | Scenario | Pre-conditions | Action | Expected Behavior |
+| :-- | :--- | :--- | :--- | :--- |
+| AT-01 | **Multi-device same-question conflict** | User logged in on Device A and Device B. Both devices offline. | Device A answers Q1 (Seq 1, 10:00AM). Device B answers Q1 (Seq 1, 10:01AM). Both go online. | Conflict engine processes whichever arrives first. The second payload is evaluated. Since sequence is tied and time drift is within tolerance, the tie-break relies on ULID lexical ordering. The "winner" is saved; the "loser" is written to `sync_conflicts_log`. |
+| AT-02 | **Replay duplicate idempotency key** | Client has successfully synced an answer mutation. | Client maliciously or accidentally replays the exact same network request (same `idempotency_key`). | RPC `upsert_user_answer_safe` detects the duplicate in `sync_events_ack`. RPC halts, returns the cached `response_jsonb`, and prevents any DB mutation. |
+| AT-03 | **App offline full quiz + later sync** | Device is in airplane mode. `quiz_sessions` is active. | User completes entire quiz, reaching `SUBMITTED_LOCAL` state. Device reconnects. | Sync engine outbox drains sequentially. All queued `user_answers` and `quiz_sessions` mutations are pushed. The final mutation transitions session to `SYNCED_FINAL`. |
+| AT-04 | **Session finalize idempotency** | Session is in `SYNCED_FINAL` state on server. | Client attempts to push an `IN_PROGRESS` state or a new answer mutation. | The RPC `mark_session_synced_final` or `upsert_user_answer_safe` rejects the update, enforcing that `SYNCED_FINAL` is immutable. Conflict is logged. |
+| AT-05 | **Clock skew > tolerance threshold** | Client clock is artificially set 10 seconds behind server time. | Client submits an answer mutation. | Sequence check passes. Time check fails (> 3000ms drift). Conflict engine defaults to ULID lexical ordering tie-breaker to accept or reject the mutation safely. |
+| AT-06 | **Auth expired mid-sync** | Sync queue has 5 pending mutations. | Token expires during mutation 2. | Sync engine receives 401 Unauthorized. Queue halts. User is prompted to re-authenticate. After new token is acquired, queue resumes sequentially from mutation 2. |
+| AT-07 | **GK LLM outage with local snapshot available** | Upstream GK LLM API is down (503). | User starts a quiz that is fully cached in Room database. | Client bypasses GK LLM fetch, loads quiz from local Room cache. Session progresses normally. Progress syncs to CGL Hustle backend. |
