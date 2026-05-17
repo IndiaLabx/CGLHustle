@@ -1,4 +1,5 @@
 [versions]
+lifecycleProcess = "2.7.0"
 datastore = "1.0.0"
 agp = "8.2.2"
 kotlin = "1.9.22"
@@ -19,6 +20,7 @@ work = "2.9.0"
 hiltWork = "1.2.0"
 
 [libraries]
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 work-testing = { group = "androidx.work", name = "work-testing", version.ref = "work" }
 robolectric = { group = "org.robolectric", name = "robolectric", version = "4.11.1" }

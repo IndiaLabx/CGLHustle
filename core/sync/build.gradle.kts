@@ -22,6 +22,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.lifecycle.process)
     implementation(project(":core:database"))
     implementation(project(":core:network"))
 
