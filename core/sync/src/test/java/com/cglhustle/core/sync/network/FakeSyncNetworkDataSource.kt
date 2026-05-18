@@ -1,19 +1,29 @@
 package com.cglhustle.core.sync.network
 
+import com.cglhustle.core.common.error.AppError
+import com.cglhustle.core.common.error.AppResult
+import com.cglhustle.core.common.error.Failure
+import com.cglhustle.core.common.error.NetworkError
+import com.cglhustle.core.common.error.Success
+import com.cglhustle.core.common.error.UnknownError
 import com.cglhustle.core.database.entity.SyncEventEntity
+import com.cglhustle.core.network.SyncNetworkDataSource
 
 class FakeSyncNetworkDataSource : SyncNetworkDataSource {
-    var shouldThrowUnauthorized = false
-    var shouldThrowTransientError = false
+
+    var shouldFailWithAuth = false
+    var shouldFailWithException = false
+
     val pushedEvents = mutableListOf<SyncEventEntity>()
 
-    override suspend fun pushEvent(event: SyncEventEntity) {
-        if (shouldThrowUnauthorized) {
-            throw UnauthorizedException("Simulated 401 Unauthorized")
+    override suspend fun pushEvent(event: SyncEventEntity): AppResult<Unit, AppError> {
+        if (shouldFailWithAuth) {
+            return Failure(NetworkError.AuthExpired())
         }
-        if (shouldThrowTransientError) {
-            throw Exception("Simulated Transient Network Error")
+        if (shouldFailWithException) {
+            return Failure(UnknownError())
         }
         pushedEvents.add(event)
+        return Success(Unit)
     }
 }

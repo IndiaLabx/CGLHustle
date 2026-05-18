@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":core:network"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(project(":core:common"))
     implementation(libs.androidx.lifecycle.process)
 
     // Hilt
