@@ -22,3 +22,11 @@ graph TD
 
 ## Manual Verification Note
 A manual verification running dependency tasks (e.g., `./gradlew :app:dependencies`) confirmed that **no cyclic dependencies exist** and feature modules are appropriately detached from direct database and network dependencies.
+
+## Test DI Override Strategy
+
+In our testing environments, we require deterministic execution without relying on actual external boundaries (like network APIs). To achieve this with Hilt:
+
+1. **Network Fakes:** We provide a fake implementation of interfaces like `SyncNetworkDataSource` (e.g., `FakeSyncNetworkDataSource`) within the `test` directories.
+2. **Hilt Test Module Replacement:** For instrumented and robolectric tests that use Hilt (`@HiltAndroidTest`), you can replace the real production DI modules using the `@UninstallModules` annotation on the test class, coupled with a corresponding `@InstallIn` test-specific module that provides the Fake.
+3. **Manual Injection for Unit Tests:** For standard local unit tests (like `OutboxSyncWorkerTest`), we explicitly instantiate the system under test with the fake dependencies (e.g., `FakeSyncNetworkDataSource`) rather than spinning up the entire Hilt graph, ensuring faster test execution times and direct control over the fake's state.

@@ -15,7 +15,8 @@ enum class SyncEventType {
 @Entity(
     tableName = "sync_events",
     indices = [
-        Index(value = ["userId", "idempotencyKey"], unique = true)
+        Index(value = ["userId", "idempotencyKey"], unique = true),
+        Index(value = ["status", "createdAt"]) // Added missing index
     ]
 )
 data class SyncEventEntity(

@@ -81,8 +81,8 @@ class OutboxSyncWorker @AssistedInject constructor(
                 // Push to network
                 syncNetworkDataSource.pushEvent(event)
 
-                // On success, mark as ACKED
-                syncEventDao.updateStatus(event.id, SyncStatus.ACKED)
+                // On success, mark as ACKED and clear token
+                syncEventDao.updateEventCheckpoint(event.id, SyncStatus.ACKED, null, now)
 
             } catch (e: UnauthorizedException) {
                 // On 401: Set AUTH_BLOCKED

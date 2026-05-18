@@ -17,6 +17,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+    }
+
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -41,14 +46,18 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    //noinspection GradleDependency
     androidTestImplementation("androidx.room:room-testing:2.6.1")
 }
 dependencies {
     testImplementation("org.robolectric:robolectric:4.11.1")
 }
 dependencies {
+    //noinspection GradleDependency
     testImplementation("androidx.test:core:1.5.0")
+    //noinspection GradleDependency
     testImplementation("androidx.test.ext:junit:1.1.5")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    //noinspection GradleDependency
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 }

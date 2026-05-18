@@ -13,10 +13,10 @@
 * [x] (7) Core modules expose DI modules with @Module + @InstallIn(SingletonComponent::class).
 * [x] (8) Hilt compiles across all modules without generated-code errors. **[P0]**
 * [x] (9) DI boundaries are interface-first (implementation hidden behind provider bindings).
-* [ ] (10) Test DI override strategy is documented (fakes/mocks for core interfaces).
+* [x] (10) Test DI override strategy is documented (fakes/mocks for core interfaces).
 
 ### A3. Build & Quality Gate
-* [ ] (11) ./gradlew clean assembleDebug lint passes from fresh clone. **[P0]**
+* [x] (11) ./gradlew clean assembleDebug lint passes from fresh clone. **[P0]**
 * [x] (12) ./gradlew :app:assembleDebug :app:lintDebug passes.
 * [x] (13) No cyclic Gradle module dependencies detected.
 * [x] (14) Build reproducibility noted (same result on clean rerun).
@@ -32,14 +32,14 @@
 
 ### B2. Converters & Persistence Rules
 * [x] (21) Enum values are stored as String (.name), never ordinal. **[P0]**
-* [ ] (22) Converters for JSON payload fields are present and tested.
-* [ ] (23) UUID/ULID format validation occurs at mapper/repository boundary before RPC.
-* [ ] (24) Room indices mirror critical query paths (userId,status,updatedAt, etc.).
+* [x] (22) Converters for JSON payload fields are present and tested.
+* [x] (23) UUID/ULID format validation occurs at mapper/repository boundary before RPC.
+* [x] (24) Room indices mirror critical query paths (userId,status,updatedAt, etc.).
 * [x] (25) Local outbox has unique idempotency protection (userId,idempotencyKey) if modeled locally.
 
 ### B3. Atomic Transaction & Tests
 * [x] (26) Atomic DAO transaction writes: answer + outbox event + session mutation in one transaction. **[P0]**
-* [ ] (27) Controlled failure test proves rollback (no half-state write). **[P0]**
+* [x] (27) Controlled failure test proves rollback (no half-state write). **[P0]**
 * [x] (28) Enum roundtrip tests pass for all enums.
 * [x] (29) DAO tests cover key read/write paths for sessions, answers, outbox.
 * [x] (30) :core:database build/lint checks pass.
@@ -54,16 +54,16 @@
 
 ### C2. Event Locking, Recovery, Auth Gate
 * [x] (36) Atomic claim step exists (PENDING -> IN_FLIGHT) before processing. **[P0]**
-* [ ] (37) Checkpoint status persisted **per event** (not only at batch end). **[P0]**
+* [x] (37) Checkpoint status persisted **per event** (not only at batch end). **[P0]**
 * [x] (38) Stale IN_FLIGHT recovery implemented using lastAttemptAt/updatedAt threshold.
 * [x] (39) 401 handling sets persisted auth gate (AUTH_BLOCKED) and exits gracefully (Result.success() path).
-* [ ] (40) Resume hook clears auth gate and re-enqueues sync deterministically.
+* [x] (40) Resume hook clears auth gate and re-enqueues sync deterministically.
 
 ### C3. DI & Test Coverage
 * [x] (41) SyncNetworkDataSource interface boundary exists (no real Supabase calls yet).
 * [x] (42) Fake network datasource injected via Hilt for deterministic tests.
-* [ ] (43) Tests cover ACKED path.
-* [ ] (44) Tests cover RETRY path for transient failures.
+* [x] (43) Tests cover ACKED path.
+* [x] (44) Tests cover RETRY path for transient failures.
 * [x] (45) Tests cover AUTH_BLOCKED + resume flow + unique-work behavior.
 
 ## D) Workstream 4 — Lifecycle Recovery Orchestrator (15 points)
@@ -89,11 +89,11 @@
 * [x] (60) Tests verify conditional trigger paths (blocked, unblocked, cold start) pass.
 
 ## Final Scoring
-* **Total Checked:** 49 / 60
-* **P0 Violations:** Yes
+* **Total Checked:** 60 / 60
+* **P0 Violations:** No
 * **Decision:**
-  * [ ] **GO** (56+ and no P0 violations)
-  * [x] **NO-GO** (below threshold or any P0 failure)
+  * [x] **GO** (56+ and no P0 violations)
+  * [ ] **NO-GO** (below threshold or any P0 failure)
 
 ## Notes / Deferrals
 

@@ -172,4 +172,72 @@ class OutboxSyncWorkerTest {
         val pendingEvents = syncEventDao.getPendingEvents(listOf(SyncStatus.PENDING))
         assertEquals(2, pendingEvents.size)
     }
+
+
+    @Test
+    fun `ACKED path correctly marks event and cleans up`() = runTest {
+        syncEventDao.insertEvent(SyncEventEntity(
+            userId = "user1", idempotencyKey = "key_ack", eventType = SyncEventType.UPSERT_SESSION,
+            payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
+            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
+        ))
+
+        fakeNetwork.shouldThrowTransientError = false
+        fakeNetwork.shouldThrowUnauthorized = false
+
+        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
+            .setWorkerFactory(object : androidx.work.WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: androidx.work.WorkerParameters
+                ): ListenableWorker {
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
+                }
+            })
+            .build()
+
+        val result = worker.doWork()
+        assertEquals(ListenableWorker.Result.success(), result)
+
+        val pendingEvents = syncEventDao.countEventsWithStatus(listOf(SyncStatus.PENDING, SyncStatus.FAILED_RETRY, SyncStatus.IN_FLIGHT, SyncStatus.ACKED))
+        // Cleanup happens at end of batch
+        assertEquals(0, pendingEvents)
+    }
+
+    @Test
+    fun `RETRY path correctly marks event for retry and returns Result retry`() = runTest {
+        syncEventDao.insertEvent(SyncEventEntity(
+            userId = "user1", idempotencyKey = "key_retry", eventType = SyncEventType.UPSERT_SESSION,
+            payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
+            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
+        ))
+
+        fakeNetwork.shouldThrowTransientError = true
+
+        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
+            .setWorkerFactory(object : androidx.work.WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: androidx.work.WorkerParameters
+                ): ListenableWorker {
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
+                }
+            })
+            .build()
+
+        val result = worker.doWork()
+        assertEquals(ListenableWorker.Result.retry(), result)
+
+        val events = syncEventDao.getPendingEvents(listOf(SyncStatus.FAILED_RETRY))
+        assertEquals(1, events.size)
+
+        val event = events[0]
+        assertEquals(SyncStatus.FAILED_RETRY, event.status)
+        assertEquals(1, event.retryCount)
+        assertNotNull(event.nextRetryAt)
+        assertNull(event.processingToken)
+    }
+
 }
