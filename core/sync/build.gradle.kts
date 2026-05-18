@@ -55,6 +55,10 @@ dependencies {
     //noinspection GradleDependency
     testImplementation("androidx.test:core:1.5.0")
     testImplementation(libs.room.runtime)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.ktor.serialization.kotlinx.json)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.room.ktx)
     //noinspection GradleDependency
     testImplementation("androidx.room:room-testing:2.6.1")
