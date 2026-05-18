@@ -16,6 +16,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+    }
+
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -46,9 +51,11 @@ dependencies {
     testImplementation(libs.work.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.core.ktx)
+    //noinspection GradleDependency
     testImplementation("androidx.test:core:1.5.0")
     testImplementation(libs.room.runtime)
     testImplementation(libs.room.ktx)
+    //noinspection GradleDependency
     testImplementation("androidx.room:room-testing:2.6.1")
     kspTest(libs.room.compiler)
 }

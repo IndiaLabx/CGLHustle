@@ -32,10 +32,10 @@ data class QuestionSnapshotEntity(
     val questionTextHi: String?,
 
     // Stored as JSON strings
-    val options: String,
-    val optionsHi: String?,
+    val options: List<String>,
+    val optionsHi: List<String>?,
 
     val correctAnswer: String,
-    val explanation: String?,
-    val tags: String? // JSON list
+    val explanation: Map<String, String>?,
+    val tags: List<String>? // JSON list
 )

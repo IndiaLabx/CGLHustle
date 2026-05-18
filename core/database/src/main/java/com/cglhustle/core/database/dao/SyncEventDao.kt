@@ -25,6 +25,9 @@ abstract class SyncEventDao {
     @Query("UPDATE sync_events SET status = :status WHERE id = :id")
     abstract suspend fun updateStatus(id: Long, status: SyncStatus)
 
+    @Query("UPDATE sync_events SET status = :status, processingToken = :processingToken, lastAttemptAt = :lastAttemptAt WHERE id = :id")
+    abstract suspend fun updateEventCheckpoint(id: Long, status: SyncStatus, processingToken: String?, lastAttemptAt: Long)
+
     @Query("DELETE FROM sync_events WHERE status IN (:statuses)")
     abstract suspend fun deleteEventsWithStatus(statuses: List<SyncStatus>)
 

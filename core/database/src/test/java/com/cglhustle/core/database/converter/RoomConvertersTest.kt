@@ -45,4 +45,28 @@ class RoomConvertersTest {
         val backToEnum = converters.toSyncEventType(asString)
         assertEquals(original, backToEnum)
     }
+
+    @Test
+    fun testStringListRoundTrip() {
+        val list = listOf("A", "B", "C")
+        val jsonString = converters.fromStringList(list)
+        val backToList = converters.toStringList(jsonString)
+        assertEquals(list, backToList)
+
+        val emptyJson = converters.fromStringList(emptyList())
+        val backToEmpty = converters.toStringList(emptyJson)
+        assertEquals(emptyList<String>(), backToEmpty)
+    }
+
+    @Test
+    fun testStringMapRoundTrip() {
+        val map = mapOf("en" to "Explanation", "hi" to "व्याख्या")
+        val jsonString = converters.fromStringMap(map)
+        val backToMap = converters.toStringMap(jsonString)
+        assertEquals(map, backToMap)
+
+        val emptyJson = converters.fromStringMap(emptyMap())
+        val backToEmpty = converters.toStringMap(emptyJson)
+        assertEquals(emptyMap<String, String>(), backToEmpty)
+    }
 }
