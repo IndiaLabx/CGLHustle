@@ -3,13 +3,19 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
     namespace = "com.cglhustle.core.network"
     compileSdk = 34
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
+        buildConfigField("String", "SUPABASE_URL", "\"\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"\"")
         minSdk = 26
     }
     compileOptions {
@@ -30,6 +36,7 @@ dependencies {
     implementation(project(":core:database")) // added this for SyncEventDao
 
     implementation(libs.androidx.core.ktx)
+    implementation(project(":core:common"))
 
     // WorkManager
     implementation(libs.work.runtime.ktx)
@@ -43,5 +50,15 @@ dependencies {
     // Supabase
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
-    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.auth)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    implementation(libs.kotlinx.serialization.json)
+
 }

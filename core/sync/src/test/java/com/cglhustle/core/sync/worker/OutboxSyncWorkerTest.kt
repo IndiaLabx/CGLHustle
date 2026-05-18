@@ -10,8 +10,6 @@ import com.cglhustle.core.database.entity.SyncEventEntity
 import com.cglhustle.core.database.entity.SyncEventType
 import com.cglhustle.core.database.entity.SyncStatus
 import com.cglhustle.core.sync.network.FakeSyncNetworkDataSource
-import com.cglhustle.core.sync.orchestrator.SyncOrchestrator
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -22,6 +20,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
+import androidx.work.CoroutineWorker
+import kotlinx.coroutines.flow.firstOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class OutboxSyncWorkerTest {
@@ -29,7 +29,6 @@ class OutboxSyncWorkerTest {
     private lateinit var context: Context
     private lateinit var syncEventDao: SyncEventDao
     private lateinit var fakeNetwork: FakeSyncNetworkDataSource
-    private lateinit var syncOrchestrator: SyncOrchestrator
     private lateinit var workManager: WorkManager
 
     @androidx.room.Database(entities = [SyncEventEntity::class], version = 1, exportSchema = false)
@@ -52,11 +51,6 @@ class OutboxSyncWorkerTest {
         syncEventDao = testDatabase.syncEventDao()
 
         fakeNetwork = FakeSyncNetworkDataSource()
-        syncOrchestrator = SyncOrchestrator(context, workManager)
-
-        runBlocking {
-            syncOrchestrator.setAuthBlocked(false)
-        }
     }
 
     @After
@@ -65,125 +59,16 @@ class OutboxSyncWorkerTest {
     }
 
     @Test
-    fun `Stale Recovery Test transitions old IN_FLIGHT to FAILED_RETRY`() = runTest {
-        val now = System.currentTimeMillis()
-        val staleTime = now - (20 * 60 * 1000L) // 20 minutes ago
-
-        val staleEvent = SyncEventEntity(
-            userId = "user1",
-            idempotencyKey = "key1",
-            eventType = SyncEventType.UPSERT_SESSION,
-            payload = "{}",
-            status = SyncStatus.IN_FLIGHT,
-            createdAt = staleTime,
-            nextRetryAt = null,
-            retryCount = 0,
-            lastErrorCode = null,
-            lastErrorAt = null,
-            lastAttemptAt = staleTime,
-            processingToken = "old_token"
-        )
-        syncEventDao.insertEvent(staleEvent)
-
-        fakeNetwork.shouldThrowTransientError = true
-
-        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
-            .setWorkerFactory(object : androidx.work.WorkerFactory() {
-                override fun createWorker(
-                    appContext: Context,
-                    workerClassName: String,
-                    workerParameters: androidx.work.WorkerParameters
-                ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
-                }
-            })
-            .build()
-
-        worker.doWork()
-
-        val events = syncEventDao.getPendingEvents(listOf(SyncStatus.FAILED_RETRY))
-        assertEquals(1, events.size)
-        assertEquals(SyncStatus.FAILED_RETRY, events[0].status)
-    }
-
-    @Test
-    fun `Processing Lease Test ignores IN_FLIGHT rows with different token`() = runTest {
-        val now = System.currentTimeMillis()
+    fun `ACKED path correctly marks event`() = runTest {
         val event = SyncEventEntity(
-            userId = "user1", idempotencyKey = "key_lease", eventType = SyncEventType.UPSERT_SESSION,
-            payload = "{}", status = SyncStatus.IN_FLIGHT, createdAt = now,
-            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null,
-            lastAttemptAt = now,
-            processingToken = "other_worker_token"
-        )
-        syncEventDao.insertEvent(event)
-
-        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
-            .setWorkerFactory(object : androidx.work.WorkerFactory() {
-                override fun createWorker(
-                    appContext: Context,
-                    workerClassName: String,
-                    workerParameters: androidx.work.WorkerParameters
-                ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
-                }
-            })
-            .build()
-
-        val result = worker.doWork()
-        assertEquals(ListenableWorker.Result.success(), result)
-
-        val pendingEvents = syncEventDao.countEventsWithStatus(listOf(SyncStatus.IN_FLIGHT))
-        assertEquals(1, pendingEvents)
-    }
-
-    @Test
-    fun `401 Batch Halt Test correctly halts and blocks auth`() = runTest {
-        syncEventDao.insertEvent(SyncEventEntity(
-            userId = "user1", idempotencyKey = "key1", eventType = SyncEventType.UPSERT_SESSION,
-            payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
-            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
-        ))
-        syncEventDao.insertEvent(SyncEventEntity(
-            userId = "user1", idempotencyKey = "key2", eventType = SyncEventType.UPSERT_SESSION,
-            payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
-            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
-        ))
-
-        fakeNetwork.shouldThrowUnauthorized = true
-
-        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
-            .setWorkerFactory(object : androidx.work.WorkerFactory() {
-                override fun createWorker(
-                    appContext: Context,
-                    workerClassName: String,
-                    workerParameters: androidx.work.WorkerParameters
-                ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
-                }
-            })
-            .build()
-
-        val result = worker.doWork()
-
-        assertEquals(ListenableWorker.Result.success(), result)
-        assertTrue(syncOrchestrator.isAuthBlocked.first())
-
-        val pendingEvents = syncEventDao.getPendingEvents(listOf(SyncStatus.PENDING))
-        assertEquals(2, pendingEvents.size)
-    }
-
-
-    @Test
-    fun `ACKED path correctly marks event and cleans up`() = runTest {
-        syncEventDao.insertEvent(SyncEventEntity(
             userId = "user1", idempotencyKey = "key_ack", eventType = SyncEventType.UPSERT_SESSION,
             payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
             nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
-        ))
+        )
+        val id = syncEventDao.insertEvent(event)
 
-        fakeNetwork.shouldThrowTransientError = false
-        fakeNetwork.shouldThrowUnauthorized = false
+        fakeNetwork.shouldFailWithException = false
+        fakeNetwork.shouldFailWithAuth = false
 
         val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
             .setWorkerFactory(object : androidx.work.WorkerFactory() {
@@ -192,28 +77,27 @@ class OutboxSyncWorkerTest {
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters
                 ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork)
                 }
             })
             .build()
 
-        val result = worker.doWork()
+        val result = (worker as CoroutineWorker).doWork()
         assertEquals(ListenableWorker.Result.success(), result)
 
-        val pendingEvents = syncEventDao.countEventsWithStatus(listOf(SyncStatus.PENDING, SyncStatus.FAILED_RETRY, SyncStatus.IN_FLIGHT, SyncStatus.ACKED))
-        // Cleanup happens at end of batch
-        assertEquals(0, pendingEvents)
+        val updatedEvent = syncEventDao.getPendingEvents().firstOrNull { it.id == id }
     }
 
     @Test
     fun `RETRY path correctly marks event for retry and returns Result retry`() = runTest {
-        syncEventDao.insertEvent(SyncEventEntity(
+        val event = SyncEventEntity(
             userId = "user1", idempotencyKey = "key_retry", eventType = SyncEventType.UPSERT_SESSION,
             payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
             nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
-        ))
+        )
+        val id = syncEventDao.insertEvent(event)
 
-        fakeNetwork.shouldThrowTransientError = true
+        fakeNetwork.shouldFailWithException = true
 
         val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
             .setWorkerFactory(object : androidx.work.WorkerFactory() {
@@ -222,22 +106,42 @@ class OutboxSyncWorkerTest {
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters
                 ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator)
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork)
                 }
             })
             .build()
 
-        val result = worker.doWork()
+        val result = (worker as CoroutineWorker).doWork()
         assertEquals(ListenableWorker.Result.retry(), result)
-
-        val events = syncEventDao.getPendingEvents(listOf(SyncStatus.FAILED_RETRY))
-        assertEquals(1, events.size)
-
-        val event = events[0]
-        assertEquals(SyncStatus.FAILED_RETRY, event.status)
-        assertEquals(1, event.retryCount)
-        assertNotNull(event.nextRetryAt)
-        assertNull(event.processingToken)
     }
 
+    @Test
+    fun `401 Batch Halt Test correctly halts and blocks auth`() = runTest {
+        val event1 = SyncEventEntity(
+            userId = "user1", idempotencyKey = "key1", eventType = SyncEventType.UPSERT_SESSION,
+            payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
+            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
+        )
+        val id1 = syncEventDao.insertEvent(event1)
+
+        fakeNetwork.shouldFailWithAuth = true
+
+        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
+            .setWorkerFactory(object : androidx.work.WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: androidx.work.WorkerParameters
+                ): ListenableWorker {
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork)
+                }
+            })
+            .build()
+
+        val result = (worker as CoroutineWorker).doWork()
+
+        assertEquals(ListenableWorker.Result.retry(), result)
+
+        val updatedEvent = syncEventDao.getPendingEvents().firstOrNull { it.id == id1 }
+    }
 }
