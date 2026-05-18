@@ -17,5 +17,6 @@ rootProject.name = "CGL Hustle"
 include(":app")
 include(":core:network")
 include(":core:database")
+include(":core:common")
 include(":core:sync")
 include(":feature:mocktest")
