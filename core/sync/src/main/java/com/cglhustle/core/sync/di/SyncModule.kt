@@ -11,6 +11,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import com.cglhustle.core.database.entity.SyncEventEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class DummySyncNetworkDataSource : SyncNetworkDataSource {
     override suspend fun pushEvent(event: SyncEventEntity) {
@@ -20,6 +23,13 @@ class DummySyncNetworkDataSource : SyncNetworkDataSource {
 @Module
 @InstallIn(SingletonComponent::class)
 object SyncModule {
+
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
 
     @Provides
     @Singleton
