@@ -1,0 +1,10 @@
+feat: Implement network layer with Ktor and Supabase
+
+- Configure Ktor HttpClient with CIO engine, serialization, and timeout plugins.
+- Define AuthTokenProvider interface for dynamic bearer token injection.
+- Create UserAnswerDto data transfer object.
+- Implement SyncNetworkDataSourceImpl calling Supabase RPC 'upsert_user_answer_safe'.
+- Add Throwable.toAppError() to map Ktor exceptions to domain AppError (NetworkError).
+- Move SyncNetworkDataSource interface to :core:network to resolve circular dependencies.
+- Fix all OutboxSyncWorker and mock dependencies in test classes.
+- Update libs.versions.toml with Ktor dependencies.
