@@ -78,6 +78,10 @@ dependencies {
     implementation(project(":core:sync"))
     implementation(project(":core:ui"))
     implementation(project(":feature:mocktest"))
+    implementation(project(":feature:auth"))
+    implementation(project(":feature:quiz-config"))
+    implementation(project(":feature:active-session"))
+    implementation(project(":feature:results"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

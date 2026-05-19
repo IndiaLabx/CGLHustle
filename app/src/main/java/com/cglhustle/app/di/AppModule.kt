@@ -8,6 +8,8 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
+// Feature teams must use @InstallIn(SingletonComponent::class) inside their own modules.
+// Do not modify the central AppModule.
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
