@@ -25,6 +25,9 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -38,6 +41,13 @@ dependencies {
     implementation(libs.androidx.material3)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Explicitly need activity-compose for Compose rules in tests to have a host activity
+    testImplementation("androidx.activity:activity-compose:1.8.2")
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

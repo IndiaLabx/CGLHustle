@@ -2,6 +2,7 @@ package com.cglhustle.core.sync.di
 
 import android.content.Context
 import androidx.work.WorkManager
+import com.cglhustle.core.common.logging.StructuredLogger
 import com.cglhustle.core.sync.orchestrator.SyncOrchestrator
 import dagger.Module
 import dagger.Provides
@@ -34,8 +35,9 @@ object SyncModule {
     @Singleton
     fun provideSyncOrchestrator(
         @ApplicationContext context: Context,
-        workManager: WorkManager
+        workManager: WorkManager,
+        logger: StructuredLogger
     ): SyncOrchestrator {
-        return SyncOrchestrator(context, workManager)
+        return SyncOrchestrator(context, workManager, logger)
     }
 }

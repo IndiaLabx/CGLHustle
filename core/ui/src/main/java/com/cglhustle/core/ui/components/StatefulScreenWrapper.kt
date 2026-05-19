@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.cglhustle.core.common.error.AppError
 import com.cglhustle.core.common.error.NetworkError
 import com.cglhustle.core.common.error.RecoveryAction
+import com.cglhustle.core.common.error.toUserFriendlyMessage
 import com.cglhustle.core.ui.state.UiState
 
 @Composable
@@ -43,6 +44,15 @@ fun <T> StatefulScreenWrapper(
             }
             is UiState.Success -> {
                 content(uiState.data)
+
+                if (uiState.transientError != null) {
+                    TransientErrorView(
+                        error = uiState.transientError,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                    )
+                }
             }
         }
     }
@@ -68,7 +78,7 @@ fun ErrorView(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Code: ${error.telemetryCode}",
+                text = error.toUserFriendlyMessage(),
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -78,6 +88,26 @@ fun ErrorView(
                     Text("Retry")
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TransientErrorView(
+    error: AppError,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = error.toUserFriendlyMessage(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error
+            )
         }
     }
 }
@@ -117,5 +147,17 @@ fun StatefulScreenWrapper_ErrorFatalPreview() {
         uiState = UiState.Error(com.cglhustle.core.common.error.StorageError.DatabaseCorruption())
     ) {
         Text("Content")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun StatefulScreenWrapper_SuccessWithTransientPreview() {
+    StatefulScreenWrapper(
+        uiState = UiState.Success("Hello World", NetworkError.ServerOutage())
+    ) { data ->
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(data)
+        }
     }
 }

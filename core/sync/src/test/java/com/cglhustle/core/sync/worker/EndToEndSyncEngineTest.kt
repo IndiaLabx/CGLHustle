@@ -152,7 +152,7 @@ class EndToEndSyncEngineTest {
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters
                 ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, syncNetworkDataSource, syncOrchestrator)
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, syncNetworkDataSource, syncOrchestrator, mock(com.cglhustle.core.common.logging.StructuredLogger::class.java))
                 }
             })
             .build()
@@ -221,7 +221,7 @@ class EndToEndSyncEngineTest {
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters
                 ): ListenableWorker {
-                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, syncNetworkDataSource, syncOrchestrator)
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, syncNetworkDataSource, syncOrchestrator, mock(com.cglhustle.core.common.logging.StructuredLogger::class.java))
                 }
             })
             .build()
