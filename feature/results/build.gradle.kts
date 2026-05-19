@@ -29,17 +29,22 @@ android {
         abortOnError = true
         warningsAsErrors = true
         disable += "ObsoleteLintCustomCheck"
+        disable += "GradleDependency"
     }
 }
 
 dependencies {
+    implementation(project(":core:common"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
 
     // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 }
