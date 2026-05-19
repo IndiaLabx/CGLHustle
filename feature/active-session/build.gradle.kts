@@ -42,4 +42,11 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    implementation(project(":core:network"))
+    implementation(project(":core:ui"))
+    implementation(project(":core:common"))
+    implementation(project(":core:database"))
+
+    implementation(libs.androidx.hilt.navigation.compose)
 }
