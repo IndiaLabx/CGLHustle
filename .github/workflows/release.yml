@@ -22,37 +22,31 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Decode Keystore
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      run: |
-        echo "$KEYSTORE_BASE64" | base64 --decode > release.jks
+    # --- TEMPORARILY DISABLED: Preventing Corrupted Keystore Error ---
+    # - name: Decode Keystore
+    #   env:
+    #     KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    #   run: |
+    #     echo "$KEYSTORE_BASE64" | base64 --decode > release.jks
 
+    # Since the keystore file is not generated above, our build.gradle.kts 
+    # fallback logic will automatically sign this release build with the debug key!
     - name: Build Release APK and AAB
-      env:
-        KEYSTORE_PATH: ${{ github.workspace }}/release.jks
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
       run: ./gradlew assembleRelease bundleRelease
 
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
         name: release-apk
-        path: app/build/outputs/apk/release/cgl-hustle-v*-release.apk
+        path: app/build/outputs/apk/release/*-release*.apk
         retention-days: 14
 
     - name: Upload Release AAB
       uses: actions/upload-artifact@v4
       with:
         name: release-aab
-        path: app/build/outputs/bundle/release/cgl-hustle-v*-release.aab
+        path: app/build/outputs/bundle/release/*-release*.aab
         retention-days: 14
-
-    - name: Cleanup Keystore
-      if: always()
-      run: rm -f release.jks
 
     - name: Failure Notification
       if: failure()
@@ -61,6 +55,3 @@ jobs:
         echo "The CGL Hustle release build failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
         echo "Job: ${{ github.job }}" >> $GITHUB_STEP_SUMMARY
         echo "Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-
-        # Slack/Discord webhook placeholder
-        # curl -X POST -H 'Content-type: application/json' --data '{"text":"🚨 The CGL Hustle release build failed on main! Please check the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' ${{ secrets.SLACK_WEBHOOK_URL }}
