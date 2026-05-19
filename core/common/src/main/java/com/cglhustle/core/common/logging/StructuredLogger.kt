@@ -68,11 +68,15 @@ class LogcatStructuredLogger @Inject constructor() : StructuredLogger {
         val keysToMask = listOf("userId", "user_id", "email", "password", "token", "idempotencyKey")
 
         for (key in keysToMask) {
-            // Regex to match "key": "value", "key": 123, "key": null, etc. in a JSON-like string
-            // We'll replace the value part with "[REDACTED]"
-            // This regex handles double quotes around the key, and varying spaces
-            val regex = Regex("(\"$key\"\\s*:\\s*)(?:\"[^\"]*\"|[^,}]+)")
-            masked = masked.replace(regex, "$1\"[REDACTED]\"")
+            try {
+                // Regex to match "key": "value", "key": 123, "key": null, etc. in a JSON-like string
+                // We'll replace the value part with "[REDACTED]"
+                // This regex handles double quotes around the key, and varying spaces
+                val regex = Regex("(\"$key\"\\s*:\\s*)(?:\"[^\"]*\"|[^,}]+)")
+                masked = masked.replace(regex, "$1\"[REDACTED]\"")
+            } catch (e: Exception) {
+                // Ignore exception and continue masking other keys
+            }
         }
         return masked
     }

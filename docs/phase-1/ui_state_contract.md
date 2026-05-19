@@ -1,41 +1,36 @@
-# Phase 1: UI State Contract
+# UI State Contract
 
-This document outlines the strict UI state handling rules for CGL Hustle.
+This document outlines the standard UI state management contract for the CGL Hustle application. It ensures consistent handling of loading, success, and error states across all features, providing a uniform experience for the user.
 
-## 1. Unidirectional Data Flow (UDF) & State Architecture
+## Core States
 
-All Compose UI screens must be driven by a single stream of state originating from the ViewModel (typically exposed as a `StateFlow<UiState<T>>`).
-
-The generic `UiState` has exactly three mutually exclusive variants:
-*   `Loading`: Indicates initial data fetch. The UI should display a full-screen loading spinner.
-*   `Error`: Indicates a full-screen blocking error where data cannot be displayed.
-*   `Success`: Contains the rendered data model.
-
-### 1.1 Non-Blocking Mutation Failures
-
-When a UI state is currently `Success` (data is rendered), but a non-blocking background mutation fails (e.g. an outbox update), the data view MUST NOT unmount.
-
-Instead of treating the transient error as a side-effect/one-off event (like a `SharedFlow`), we embrace pure declarative UDF by attaching the transient error directly to the `Success` state:
+All feature UI state objects should be sealed interfaces or classes, with `com.cglhustle.core.ui.state.UiState<T>` providing the foundation:
 
 ```kotlin
-data class Success<out T>(
-    val data: T,
-    val transientError: AppError? = null
-) : UiState<T>
+sealed interface UiState<out T> {
+    data object Loading : UiState<Nothing>
+    data class Success<out T>(val data: T, val transientError: AppError? = null) : UiState<T>
+    data class Error(val error: AppError) : UiState<Nothing>
+}
 ```
 
-When `transientError` is not null, `StatefulScreenWrapper` reads this value and overlays a Snackbar or non-blocking Banner, while the primary content remains visible and fully interactive. Once the user dismisses the Snackbar or the mutation succeeds, the ViewModel explicitly sets `transientError` back to `null`.
+### 1. Loading
+Represents the initial state before any data has been fetched, or when a full-screen blocking load is taking place. The UI should display a prominent loading indicator (e.g., a centered `CircularProgressIndicator`).
 
-## 2. PII Redaction Strategy
+### 2. Error (Blocking)
+Represents a failure to load the *initial* requisite data for the screen. The UI should display a full-screen error state, typically with a description of the error and a "Retry" button.
 
-Telemetry and logging payloads MUST NEVER log sensitive user data. See the `StructuredLogger` implementation for specific rules regarding JSON masking of fields like `userId`, `email`, and `token`.
+### 3. Success
+Represents the state where the primary data for the screen is available and can be displayed.
+`val data: T` contains the domain model required for the UI.
 
-## 3. Error Copy Mapping Guidelines
+## Mutation Failure UX (Transient Errors)
+When a user interaction triggers a mutation (e.g., submitting a form, toggling a favorite) while the screen is already in the `Success` state, a failure should *not* transition the entire screen back to the blocking `Error` state. Doing so would destroy the user's context and data.
 
-The `AppError` base interface contains a `telemetryCode` which is intended purely for developer logging (e.g. `ERR_NET_TRANSIENT`).
-
-For user-facing error messages, we map these internal types to human-readable, non-technical English.
-*   **Do not output raw HTTP codes or SQL errors** (e.g., avoid "HTTP 503").
-*   **Use conversational, empathetic phrasing.** For example: "Our servers are taking a short break. We will save your progress offline."
-
-The logic mapping `AppError` to localized strings is contained within the `AppError.toUserFriendlyMessage(): String` extension.
+Instead, mutation errors are handled as **transient errors**:
+1. The mutation is attempted.
+2. If it fails, the domain/data layer returns an `AppError`.
+3. The ViewModel updates the current `UiState.Success` to include this `transientError`.
+4. The UI observes the `transientError` and displays it using a non-intrusive mechanism, such as a Snackbar.
+5. The `transientError` should be mapped to a user-friendly string using `AppError.toUserFriendlyMessage()`.
+6. Once displayed, the UI or ViewModel must clear the `transientError` (set it back to `null`) to prevent the error from being shown again on recomposition.

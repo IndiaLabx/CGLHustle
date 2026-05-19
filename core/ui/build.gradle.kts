@@ -12,6 +12,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -45,6 +52,7 @@ dependencies {
     testImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    testImplementation(libs.androidx.ui.test.manifest)
     // Explicitly need activity-compose for Compose rules in tests to have a host activity
     testImplementation("androidx.activity:activity-compose:1.8.2")
 
