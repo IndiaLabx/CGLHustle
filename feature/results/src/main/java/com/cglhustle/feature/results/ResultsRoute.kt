@@ -1,9 +1,9 @@
 package com.cglhustle.feature.results
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.cglhustle.feature.results.ui.ResultsScreen
 
 @Composable
 fun ResultsRoute(onDone: () -> Unit) {
-    Text("Results Route")
+    ResultsScreen(onDone = onDone)
 }
