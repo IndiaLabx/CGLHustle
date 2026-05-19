@@ -2,6 +2,7 @@ package com.cglhustle.feature.activesession
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.MutationStatus
 import com.cglhustle.core.ui.state.UiState
 import com.cglhustle.feature.activesession.domain.ActiveSessionData
@@ -37,6 +38,7 @@ class ActiveSessionViewModel @Inject constructor(
 
     private var initialized = false
     private var currentSessionId: String = ""
+    private var userId: String = "mock_user_id" // Mock user id
 
     fun initialize(sessionId: String?) {
         if (initialized) return
@@ -67,7 +69,8 @@ class ActiveSessionViewModel @Inject constructor(
 
         if (currentData.status != SessionStatus.ACTIVE) return
 
-        val eventId = UUID.randomUUID().toString()
+        val eventId = UUID.randomUUID().toString().replace("-", "").take(26).uppercase()
+        val idempotencyKey = UUID.randomUUID().toString()
 
         // Optimistic Update
         val newPendingMutation = PendingMutation(questionId, optionId, eventId)
@@ -85,16 +88,26 @@ class ActiveSessionViewModel @Inject constructor(
 
         // Fire request to server
         viewModelScope.launch {
-            val result = repository.submitAnswer(
-                sessionId = currentData.sessionId,
-                questionId = questionId,
-                optionId = optionId,
-                eventId = eventId
-            )
+            try {
+                val request = AnswerMutationRequest(
+                    userId = userId,
+                    sessionId = currentData.sessionId,
+                    questionId = questionId,
+                    eventId = eventId,
+                    idempotencyKey = idempotencyKey
+                )
+                val responseResult = repository.submitAnswer(request)
 
-            result.onSuccess { response ->
-                reconcileMutation(questionId, eventId, response.status)
-            }.onFailure { error ->
+                responseResult.fold(
+                    onSuccess = { response ->
+                        reconcileMutation(questionId, eventId, response.status)
+                    },
+                    onFailure = {
+                         reconcileMutation(questionId, eventId, MutationStatus.CONFLICT)
+                        _events.emit(ActiveSessionEvent.ShowSnackbar("Network error submitting answer. Please try again."))
+                    }
+                )
+            } catch (e: Exception) {
                 // Treat network failure similar to conflict for now, or just show error and clear pending
                 reconcileMutation(questionId, eventId, MutationStatus.CONFLICT)
                 _events.emit(ActiveSessionEvent.ShowSnackbar("Network error submitting answer. Please try again."))
@@ -153,10 +166,20 @@ class ActiveSessionViewModel @Inject constructor(
     }
 
     fun togglePause() {
-        _uiState.update { state ->
-            if (state !is UiState.Success) return@update state
-            val newStatus = if (state.data.status == SessionStatus.ACTIVE) SessionStatus.PAUSED else SessionStatus.ACTIVE
-            UiState.Success(state.data.copy(status = newStatus))
+        val currentState = _uiState.value
+        if (currentState is UiState.Success) {
+            viewModelScope.launch {
+                val isPaused = currentState.data.status == SessionStatus.PAUSED
+                val newStatus = if (isPaused) SessionStatus.ACTIVE else SessionStatus.PAUSED
+                val updatedData = currentState.data.copy(status = newStatus)
+                _uiState.value = UiState.Success(updatedData)
+
+                if (isPaused) {
+                    repository.resumeSession(currentSessionId)
+                } else {
+                    repository.pauseSession(currentSessionId)
+                }
+            }
         }
     }
 
@@ -169,16 +192,33 @@ class ActiveSessionViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val result = repository.submitSession(currentData.sessionId)
-            result.onSuccess {
-                _uiState.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(state.data.copy(status = SessionStatus.COMPLETED))
-                    } else state
-                }
-                _events.emit(ActiveSessionEvent.SessionCompleted(currentData.sessionId))
-            }.onFailure { error ->
-                _uiState.update { state ->
+            try {
+                val result = repository.submitSession(currentData.sessionId)
+
+                result.fold(
+                    onSuccess = { res ->
+                        if (res) {
+                            _uiState.update { state ->
+                                if (state is UiState.Success) {
+                                    UiState.Success(state.data.copy(status = SessionStatus.COMPLETED))
+                                } else state
+                            }
+                            _events.emit(ActiveSessionEvent.SessionCompleted(currentData.sessionId))
+                        } else {
+                            throw Exception("Submit failed")
+                        }
+                    },
+                    onFailure = {
+                        _uiState.update { state ->
+                            if (state is UiState.Success) {
+                                UiState.Success(state.data.copy(status = SessionStatus.ACTIVE))
+                            } else state
+                        }
+                        _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to submit session. Try again."))
+                    }
+                )
+            } catch (e: Exception) {
+                 _uiState.update { state ->
                     if (state is UiState.Success) {
                         UiState.Success(state.data.copy(status = SessionStatus.ACTIVE))
                     } else state

@@ -1,16 +1,5 @@
 package com.cglhustle.feature.activesession.domain
 
-data class Option(
-    val id: String,
-    val text: String
-)
-
-data class Question(
-    val id: String,
-    val text: String,
-    val options: List<Option>
-)
-
 enum class SessionStatus {
     ACTIVE,
     PAUSED,

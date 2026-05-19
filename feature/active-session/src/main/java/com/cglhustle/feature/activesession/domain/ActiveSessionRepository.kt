@@ -5,10 +5,10 @@ import com.cglhustle.core.network.dto.MutationAckResponse
 
 interface ActiveSessionRepository {
     suspend fun getQuestions(sessionId: String): List<Question>
-    suspend fun submitAnswer(request: AnswerMutationRequest): MutationAckResponse
-    suspend fun pauseSession(sessionId: String): Boolean
-    suspend fun resumeSession(sessionId: String): Boolean
-    suspend fun submitSession(sessionId: String): Boolean
+    suspend fun submitAnswer(request: AnswerMutationRequest): Result<MutationAckResponse>
+    suspend fun pauseSession(sessionId: String): Result<Boolean>
+    suspend fun resumeSession(sessionId: String): Result<Boolean>
+    suspend fun submitSession(sessionId: String): Result<Boolean>
 }
 
 data class Question(
