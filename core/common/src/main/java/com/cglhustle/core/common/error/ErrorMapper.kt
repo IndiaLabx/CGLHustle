@@ -14,33 +14,50 @@ import java.net.UnknownHostException
 
 fun Throwable.toAppError(): AppError {
     return when (this) {
-        // Network: Transient
+        // Network
         is ConnectTimeoutException,
         is HttpRequestTimeoutException,
         is SocketTimeoutException,
         is UnknownHostException,
         is IOException -> NetworkError.Transient()
-
-        // Network: Specific HTTP responses
         is ResponseException -> {
-            when (this.response.status.value) {
+            when (response.status.value) {
                 401 -> NetworkError.AuthExpired()
                 404 -> NetworkError.NotFound()
                 in 500..599 -> NetworkError.ServerOutage()
                 else -> NetworkError.Transient()
             }
         }
-
-        // Storage: SQLite Exceptions
+        // Storage
         is SQLiteConstraintException -> StorageError.ConstraintViolation()
         is SQLiteDiskIOException,
         is SQLiteFullException -> StorageError.DiskFull()
         is SQLiteDatabaseCorruptException -> StorageError.DatabaseCorruption()
-
         // Validation
         is SerializationException -> ValidationError.InvalidPayload()
-
-        // Fallback
+        // Unknown
         else -> UnknownError(this)
+    }
+}
+
+/**
+ * Extension function to map internal technical AppErrors to non-technical,
+ * user-friendly English strings suitable for UI display.
+ */
+fun AppError.toUserFriendlyMessage(): String {
+    return when (this) {
+        is NetworkError.Transient -> "We're having trouble reaching the network. Please check your connection."
+        is NetworkError.AuthExpired -> "Your session has expired. Please log in again to sync your progress."
+        is NetworkError.NotFound -> "We couldn't find what you were looking for."
+        is NetworkError.ServerOutage -> "Our servers are taking a short break. We will save your progress offline."
+
+        is StorageError.DiskFull -> "Your device is out of storage space. Please free up some space to continue."
+        is StorageError.DatabaseCorruption -> "There is a problem with your local data. Please reinstall the app."
+        is StorageError.ConstraintViolation -> "An unexpected local data constraint was violated."
+
+        is ValidationError.MalformedId -> "An invalid identifier was detected."
+        is ValidationError.InvalidPayload -> "The data provided is invalid."
+
+        is UnknownError -> "An unexpected error occurred. Please try again later."
     }
 }
