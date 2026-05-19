@@ -37,28 +37,44 @@ class ActiveSessionRepositoryImpl @Inject constructor() : ActiveSessionRepositor
         )
     }
 
-    override suspend fun submitAnswer(request: AnswerMutationRequest): MutationAckResponse {
-        delay(800) // Simulate network latency
-        val isConflict = Math.random() > 0.9
-        return if (isConflict) {
-            MutationAckResponse(status = MutationStatus.CONFLICT, canonicalSequence = System.currentTimeMillis())
-        } else {
-            MutationAckResponse(status = MutationStatus.APPLIED, canonicalSequence = System.currentTimeMillis())
+    override suspend fun submitAnswer(request: AnswerMutationRequest): Result<MutationAckResponse> {
+        return try {
+            delay(800) // Simulate network latency
+            val isConflict = Math.random() > 0.9
+            if (isConflict) {
+                Result.success(MutationAckResponse(status = MutationStatus.CONFLICT, canonicalSequence = System.currentTimeMillis()))
+            } else {
+                Result.success(MutationAckResponse(status = MutationStatus.APPLIED, canonicalSequence = System.currentTimeMillis()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
-    override suspend fun pauseSession(sessionId: String): Boolean {
-        delay(300)
-        return true
+    override suspend fun pauseSession(sessionId: String): Result<Boolean> {
+        return try {
+            delay(300)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    override suspend fun resumeSession(sessionId: String): Boolean {
-        delay(300)
-        return true
+    override suspend fun resumeSession(sessionId: String): Result<Boolean> {
+        return try {
+            delay(300)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    override suspend fun submitSession(sessionId: String): Boolean {
-        delay(1500)
-        return true
+    override suspend fun submitSession(sessionId: String): Result<Boolean> {
+        return try {
+            delay(1500)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

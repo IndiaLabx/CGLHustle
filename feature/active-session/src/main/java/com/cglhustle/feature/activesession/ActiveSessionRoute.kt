@@ -28,7 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cglhustle.core.ui.components.StatefulScreenWrapper
-import com.cglhustle.feature.activesession.presentation.ActiveSessionViewModel
+import com.cglhustle.feature.activesession.domain.ActiveSessionData
+import com.cglhustle.feature.activesession.domain.SessionStatus
 
 @Composable
 fun ActiveSessionRoute(
@@ -40,28 +41,39 @@ fun ActiveSessionRoute(
         viewModel.initialize(sessionId)
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is ActiveSessionEvent.SessionCompleted -> onSessionComplete(event.sessionId)
+                is ActiveSessionEvent.ShowSnackbar -> {
+                    // Handle snackbar
+                }
+            }
+        }
+    }
+
     val uiState by viewModel.uiState.collectAsState()
 
     StatefulScreenWrapper(uiState = uiState) { data ->
         ActiveSessionScreen(
             data = data,
             onOptionSelected = viewModel::selectOption,
-            onQuestionNavigate = viewModel::goToQuestion,
+            onQuestionNavigate = viewModel::navigateToQuestion,
             onPauseToggle = viewModel::togglePause,
-            onSubmitSession = { viewModel.submitSession(onSessionComplete) }
+            onSubmitSession = { viewModel.submitSession() }
         )
     }
 }
 
 @Composable
 fun ActiveSessionScreen(
-    data: com.cglhustle.feature.activesession.presentation.ActiveSessionData,
+    data: ActiveSessionData,
     onOptionSelected: (String, String) -> Unit,
     onQuestionNavigate: (Int) -> Unit,
     onPauseToggle: () -> Unit,
     onSubmitSession: () -> Unit
 ) {
-    if (data.isPaused) {
+    if (data.status == SessionStatus.PAUSED) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Session Paused", style = MaterialTheme.typography.headlineMedium)
@@ -74,7 +86,7 @@ fun ActiveSessionScreen(
         return
     }
 
-    if (data.isSubmitting) {
+    if (data.status == SessionStatus.SUBMITTING) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
@@ -115,8 +127,8 @@ fun ActiveSessionScreen(
         ) {
             itemsIndexed(data.questions) { index, question ->
                 val isCurrent = index == data.currentQuestionIndex
-                val isAnswered = data.answers.containsKey(question.id)
-                val isPending = data.pendingMutations.any { it.questionId == question.id }
+                val isAnswered = data.selectedAnswers.containsKey(question.id)
+                val isPending = data.pendingMutations.containsKey(question.id)
 
                 Card(
                     modifier = Modifier.padding(4.dp),
@@ -159,7 +171,7 @@ fun ActiveSessionScreen(
                                 .padding(vertical = 4.dp)
                         ) {
                             RadioButton(
-                                selected = data.answers[question.id] == option.id,
+                                selected = data.selectedAnswers[question.id] == option.id,
                                 onClick = { onOptionSelected(question.id, option.id) }
                             )
                             Text(text = option.text, modifier = Modifier.padding(start = 8.dp))
