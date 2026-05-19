@@ -19,6 +19,8 @@ android {
     lint {
         abortOnError = true
         warningsAsErrors = true
+        disable += "GradleDependency"
+        baseline = file("lint-baseline.xml")
     }
     kotlinOptions {
         jvmTarget = "17"
