@@ -6,6 +6,25 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("STORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            } else {
+                // Fallback for local developer builds when env variables are not set
+                println("Release signing config missing environment variables. Falling back to debug signing config.")
+                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     namespace = "com.cglhustle.app"
     compileSdk = 34
 
@@ -22,9 +41,10 @@ android {
     }
 
     buildTypes {
-        release {
+                release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -39,6 +59,16 @@ android {
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"
+    }
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs
+            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+            .forEach { output ->
+                val outputFileName = "cgl-hustle-v${variant.versionName}-${variant.buildType.name}.apk"
+                output.outputFileName = outputFileName
+            }
     }
 }
 
