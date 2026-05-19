@@ -1,5 +1,6 @@
 package com.cglhustle.feature.activesession.data
 
+import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.MutationAckResponse
 import com.cglhustle.core.network.dto.MutationStatus
 import com.cglhustle.feature.activesession.domain.ActiveSessionRepository
@@ -11,16 +12,16 @@ import javax.inject.Inject
 class ActiveSessionRepositoryImpl @Inject constructor() : ActiveSessionRepository {
 
     override suspend fun getQuestions(sessionId: String): List<Question> {
-        delay(1000) // Mock latency
+        delay(500) // Simulate network/DB latency
         return listOf(
             Question(
                 id = "q1",
                 text = "What is the capital of France?",
                 options = listOf(
-                    Option("o1", "London"),
-                    Option("o2", "Paris"),
-                    Option("o3", "Berlin"),
-                    Option("o4", "Madrid")
+                    Option("o1", "Berlin"),
+                    Option("o2", "Madrid"),
+                    Option("o3", "Paris"),
+                    Option("o4", "Rome")
                 )
             ),
             Question(
@@ -28,46 +29,36 @@ class ActiveSessionRepositoryImpl @Inject constructor() : ActiveSessionRepositor
                 text = "Which planet is known as the Red Planet?",
                 options = listOf(
                     Option("o5", "Earth"),
-                    Option("o6", "Jupiter"),
-                    Option("o7", "Mars"),
-                    Option("o8", "Venus")
-                )
-            ),
-            Question(
-                id = "q3",
-                text = "What is the largest ocean on Earth?",
-                options = listOf(
-                    Option("o9", "Atlantic"),
-                    Option("o10", "Indian"),
-                    Option("o11", "Arctic"),
-                    Option("o12", "Pacific")
+                    Option("o6", "Mars"),
+                    Option("o7", "Jupiter"),
+                    Option("o8", "Saturn")
                 )
             )
         )
     }
 
-    override suspend fun submitAnswer(
-        sessionId: String,
-        questionId: String,
-        optionId: String,
-        eventId: String
-    ): Result<MutationAckResponse> {
-        delay(800) // Mock latency
-
-        // Mock a 10% chance of conflict for testing reconciliation
-        val isConflict = Math.random() < 0.1
-        val status = if (isConflict) MutationStatus.CONFLICT else MutationStatus.APPLIED
-
-        return Result.success(
-            MutationAckResponse(
-                status = status,
-                canonicalSequence = System.currentTimeMillis()
-            )
-        )
+    override suspend fun submitAnswer(request: AnswerMutationRequest): MutationAckResponse {
+        delay(800) // Simulate network latency
+        val isConflict = Math.random() > 0.9
+        return if (isConflict) {
+            MutationAckResponse(status = MutationStatus.CONFLICT, canonicalSequence = System.currentTimeMillis())
+        } else {
+            MutationAckResponse(status = MutationStatus.APPLIED, canonicalSequence = System.currentTimeMillis())
+        }
     }
 
-    override suspend fun submitSession(sessionId: String): Result<Unit> {
-        delay(1500) // Mock latency for final submission
-        return Result.success(Unit)
+    override suspend fun pauseSession(sessionId: String): Boolean {
+        delay(300)
+        return true
+    }
+
+    override suspend fun resumeSession(sessionId: String): Boolean {
+        delay(300)
+        return true
+    }
+
+    override suspend fun submitSession(sessionId: String): Boolean {
+        delay(1500)
+        return true
     }
 }
