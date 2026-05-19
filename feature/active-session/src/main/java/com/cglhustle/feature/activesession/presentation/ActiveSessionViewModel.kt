@@ -65,7 +65,7 @@ class ActiveSessionViewModel @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(NetworkError.Transient(e.message ?: "Unknown error"))
+                _uiState.value = UiState.Error(NetworkError.Transient())
             }
         }
     }
