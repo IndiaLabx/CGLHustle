@@ -17,6 +17,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     lint {
+        disable += "ObsoleteLintCustomCheck"
         abortOnError = true
         warningsAsErrors = true
     }
