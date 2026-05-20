@@ -1,11 +1,14 @@
 package com.cglhustle.feature.activesession.domain
 
-import com.cglhustle.core.network.dto.AnswerMutationRequest
-import com.cglhustle.core.network.dto.MutationAckResponse
-
 interface ActiveSessionRepository {
     suspend fun getQuestions(sessionId: String): List<Question>
-    suspend fun submitAnswer(request: AnswerMutationRequest): Result<MutationAckResponse>
+    suspend fun submitAnswer(
+        userId: String,
+        sessionId: String,
+        questionId: String,
+        eventId: String,
+        idempotencyKey: String
+    ): Result<FeatureMutationAckResponse>
     suspend fun pauseSession(sessionId: String): Result<Boolean>
     suspend fun resumeSession(sessionId: String): Result<Boolean>
     suspend fun submitSession(sessionId: String): Result<Boolean>
@@ -20,4 +23,15 @@ data class Question(
 data class Option(
     val id: String,
     val text: String
+)
+
+enum class FeatureMutationStatus {
+    APPLIED,
+    NOOP,
+    CONFLICT
+}
+
+data class FeatureMutationAckResponse(
+    val status: FeatureMutationStatus,
+    val canonicalSequence: Long
 )

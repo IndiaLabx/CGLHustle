@@ -2,13 +2,12 @@ package com.cglhustle.feature.activesession
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cglhustle.core.network.dto.AnswerMutationRequest
-import com.cglhustle.core.network.dto.MutationStatus
 import com.cglhustle.core.ui.state.UiState
 import com.cglhustle.feature.activesession.domain.ActiveSessionData
 import com.cglhustle.feature.activesession.domain.ActiveSessionRepository
 import com.cglhustle.feature.activesession.domain.PendingMutation
 import com.cglhustle.feature.activesession.domain.SessionStatus
+import com.cglhustle.feature.activesession.domain.FeatureMutationStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,33 +88,32 @@ class ActiveSessionViewModel @Inject constructor(
         // Fire request to server
         viewModelScope.launch {
             try {
-                val request = AnswerMutationRequest(
+                val responseResult = repository.submitAnswer(
                     userId = userId,
                     sessionId = currentData.sessionId,
                     questionId = questionId,
                     eventId = eventId,
                     idempotencyKey = idempotencyKey
                 )
-                val responseResult = repository.submitAnswer(request)
 
                 responseResult.fold(
                     onSuccess = { response ->
                         reconcileMutation(questionId, eventId, response.status)
                     },
                     onFailure = {
-                         reconcileMutation(questionId, eventId, MutationStatus.CONFLICT)
+                         reconcileMutation(questionId, eventId, FeatureMutationStatus.CONFLICT)
                         _events.emit(ActiveSessionEvent.ShowSnackbar("Network error submitting answer. Please try again."))
                     }
                 )
             } catch (e: Exception) {
                 // Treat network failure similar to conflict for now, or just show error and clear pending
-                reconcileMutation(questionId, eventId, MutationStatus.CONFLICT)
+                reconcileMutation(questionId, eventId, FeatureMutationStatus.CONFLICT)
                 _events.emit(ActiveSessionEvent.ShowSnackbar("Network error submitting answer. Please try again."))
             }
         }
     }
 
-    private fun reconcileMutation(questionId: String, eventId: String, status: MutationStatus) {
+    private fun reconcileMutation(questionId: String, eventId: String, status: FeatureMutationStatus) {
         _uiState.update { state ->
             if (state !is UiState.Success) return@update state
             val data = state.data
@@ -128,7 +126,7 @@ class ActiveSessionViewModel @Inject constructor(
 
             val updatedPending = data.pendingMutations - questionId
 
-            if (status == MutationStatus.CONFLICT) {
+            if (status == FeatureMutationStatus.CONFLICT) {
                 // Revert the answer on conflict
                 val updatedAnswers = data.selectedAnswers - questionId
                 UiState.Success(
@@ -147,7 +145,7 @@ class ActiveSessionViewModel @Inject constructor(
             }
         }
 
-        if (status == MutationStatus.CONFLICT) {
+        if (status == FeatureMutationStatus.CONFLICT) {
             viewModelScope.launch {
                 _events.emit(ActiveSessionEvent.ShowSnackbar("Conflict detected. Server state restored."))
             }
