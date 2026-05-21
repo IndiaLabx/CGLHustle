@@ -1,4 +1,4 @@
-package com.cglhustle.feature.activesession.data
+package com.cglhustle.core.sync.domain
 
 import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.MutationAckResponse
@@ -6,6 +6,8 @@ import com.cglhustle.core.network.dto.MutationStatus
 import com.cglhustle.feature.activesession.domain.ActiveSessionRepository
 import com.cglhustle.feature.activesession.domain.Option
 import com.cglhustle.feature.activesession.domain.Question
+import com.cglhustle.feature.activesession.domain.FeatureMutationAckResponse
+import com.cglhustle.feature.activesession.domain.FeatureMutationStatus
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
@@ -37,14 +39,20 @@ class ActiveSessionRepositoryImpl @Inject constructor() : ActiveSessionRepositor
         )
     }
 
-    override suspend fun submitAnswer(request: AnswerMutationRequest): Result<MutationAckResponse> {
+    override suspend fun submitAnswer(
+        userId: String,
+        sessionId: String,
+        questionId: String,
+        eventId: String,
+        idempotencyKey: String
+    ): Result<FeatureMutationAckResponse> {
         return try {
             delay(800) // Simulate network latency
             val isConflict = Math.random() > 0.9
             if (isConflict) {
-                Result.success(MutationAckResponse(status = MutationStatus.CONFLICT, canonicalSequence = System.currentTimeMillis()))
+                Result.success(FeatureMutationAckResponse(status = FeatureMutationStatus.CONFLICT, canonicalSequence = System.currentTimeMillis()))
             } else {
-                Result.success(MutationAckResponse(status = MutationStatus.APPLIED, canonicalSequence = System.currentTimeMillis()))
+                Result.success(FeatureMutationAckResponse(status = FeatureMutationStatus.APPLIED, canonicalSequence = System.currentTimeMillis()))
             }
         } catch (e: Exception) {
             Result.failure(e)

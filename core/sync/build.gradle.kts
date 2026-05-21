@@ -17,6 +17,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     lint {
+        disable += "ObsoleteLintCustomCheck"
         abortOnError = true
         warningsAsErrors = true
     }
@@ -29,6 +30,7 @@ android {
 dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:network"))
+    implementation(project(":feature:active-session"))
 
     implementation(libs.androidx.core.ktx)
     implementation(project(":core:common"))

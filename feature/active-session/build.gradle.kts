@@ -43,10 +43,8 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-        implementation(project(":core:network"))
-        implementation(project(":core:ui"))
-        implementation(project(":core:common"))
-        implementation(project(":core:database"))
-        implementation(libs.androidx.hilt.navigation.compose)
-        implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
+    implementation(project(":core:ui"))
+    implementation(project(":core:common"))
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
 }
