@@ -67,6 +67,7 @@ dependencies {
     // Supabase
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.gotrue)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)

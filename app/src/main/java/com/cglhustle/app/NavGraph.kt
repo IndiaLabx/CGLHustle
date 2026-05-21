@@ -23,10 +23,8 @@ fun AppNavGraph(
     ) {
         composable("auth") {
             AuthRoute(
-                onAuthSuccess = {
-                    navController.navigate("dashboard") {
-                        popUpTo("auth") { inclusive = true }
-                    }
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -54,8 +52,7 @@ fun AppNavGraph(
             )
         }
 
-        composable("activeSession/{sessionId}") { backStackEntry ->
-            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+        composable("activeSession/{sessionId}") {
             ActiveSessionRoute(
                 onSessionComplete = { completedSessionId ->
                     navController.navigate("results/$completedSessionId") {
@@ -65,8 +62,7 @@ fun AppNavGraph(
             )
         }
 
-        composable("results/{sessionId}") { backStackEntry ->
-            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+        composable("results/{sessionId}") {
             ResultsRoute(
                 onDone = {
                     navController.navigate("quizConfig") {

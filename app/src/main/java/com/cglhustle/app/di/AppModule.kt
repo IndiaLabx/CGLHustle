@@ -1,11 +1,8 @@
 package com.cglhustle.app.di
 
-import com.cglhustle.core.network.auth.AuthTokenProvider
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 @Module
 // Feature teams must use @InstallIn(SingletonComponent::class) inside their own modules.
@@ -13,11 +10,4 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
-    @Singleton
-    fun provideAuthTokenProvider(): AuthTokenProvider {
-        return object : AuthTokenProvider {
-            override suspend fun getLatestAccessToken(): String? = "dummy_token"
-        }
-    }
 }

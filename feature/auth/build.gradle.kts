@@ -38,8 +38,20 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
+
+    // Core dependencies
+    implementation(project(":core:common"))
+    implementation(project(":core:network"))
+    implementation(project(":core:ui"))
+
+    // Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 }
