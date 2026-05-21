@@ -35,9 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cglhustle.core.network.dto.AttemptedQuestionDto
-import com.cglhustle.core.network.dto.BookmarkedQuestionDto
-import com.cglhustle.core.network.dto.ResultsAnalyticsDto
+import com.cglhustle.feature.results.data.remote.dto.AttemptedQuestionDto
+import com.cglhustle.feature.results.data.remote.dto.BookmarkedQuestionDto
+import com.cglhustle.feature.results.data.remote.dto.ResultsAnalyticsDto
 import com.cglhustle.feature.results.viewmodel.ResultsUiState
 import com.cglhustle.feature.results.viewmodel.ResultsViewModel
 import com.cglhustle.core.common.error.AppError
