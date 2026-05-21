@@ -64,7 +64,7 @@ class ActiveSessionRepositoryImpl @Inject constructor(
                             if (matchingAnswer != null && matchingAnswer.selectedOption != null) {
                                 pendingMutations[payload.questionId] = PendingMutation(
                                     questionId = payload.questionId,
-                                    selectedOptionId = matchingAnswer.selectedOption,
+                                    selectedOptionId = matchingAnswer.selectedOption!!,
                                     eventId = payload.eventId
                                 )
                             }
