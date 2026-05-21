@@ -1,0 +1,39 @@
+--- feature/quiz-config/src/main/java/com/cglhustle/feature/quizconfig/data/repository/QuizConfigRepositoryImpl.kt
++++ feature/quiz-config/src/main/java/com/cglhustle/feature/quizconfig/data/repository/QuizConfigRepositoryImpl.kt
+@@ -62,6 +62,37 @@
+                 questionText = q.questionText,
+                 questionTextHi = q.questionTextHi,
++                options = q.options,
++                optionsHi = q.optionsHi,
++                correctAnswer = q.correctAnswer,
++                explanation = q.explanation,
++                tags = q.tags
++            )
++        }
++        questionSnapshotDao.insertSnapshots(snapshotEntities)
++
++        // Hydrate Session
++        val sessionEntity = QuizSessionEntity(
++            sessionId = response.session.sessionId,
++            userId = response.session.userId,
++            quizMetadataId = response.session.quizMetadataId,
++            status = DbSessionStatus.NOT_STARTED,
++            startTime = null,
++            lastPausedTime = null,
++            endTime = null,
++            totalPausedDurationMs = 0L,
++            activeDurationMs = 0L,
++            currentQuestionId = null,
++            sessionVersion = response.session.sessionVersion,
++            lastMutationId = response.session.lastMutationId,
++            idempotencyKey = "", // Would come from response if needed
++            deviceFingerprint = null,
++            clientGeneratedAt = System.currentTimeMillis(),
++            serverReceivedAt = null,
++            updatedAt = System.currentTimeMillis()
++        )
++        quizSessionDao.insertSession(sessionEntity)
++
++        return sessionId
+     }
+ }

@@ -2,9 +2,7 @@ package com.cglhustle.feature.quizconfig.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cglhustle.core.ui.state.UiState
 import com.cglhustle.feature.quizconfig.domain.model.QuizConfigPayload
-import com.cglhustle.feature.quizconfig.domain.model.QuizFilterOptions
 import com.cglhustle.feature.quizconfig.domain.repository.QuizConfigRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,8 +16,8 @@ class QuizConfigViewModel @Inject constructor(
     private val repository: QuizConfigRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<QuizFilterOptions>>(UiState.Loading)
-    val uiState: StateFlow<UiState<QuizFilterOptions>> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<QuizConfigUiState>(QuizConfigUiState.Loading)
+    val uiState: StateFlow<QuizConfigUiState> = _uiState.asStateFlow()
 
     private val _isCreatingSession = MutableStateFlow(false)
     val isCreatingSession: StateFlow<Boolean> = _isCreatingSession.asStateFlow()
@@ -33,12 +31,12 @@ class QuizConfigViewModel @Inject constructor(
 
     fun loadFilters() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            _uiState.value = QuizConfigUiState.Loading
             try {
                 val filters = repository.fetchAvailableFilters()
-                _uiState.value = UiState.Success(filters)
+                _uiState.value = QuizConfigUiState.Success(filters)
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(com.cglhustle.core.common.error.UnknownError(e))
+                _uiState.value = QuizConfigUiState.Error(e.message ?: "An unexpected error occurred")
             }
         }
     }

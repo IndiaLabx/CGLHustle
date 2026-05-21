@@ -1,0 +1,22 @@
+--- feature/quiz-config/src/main/java/com/cglhustle/feature/quizconfig/presentation/QuizConfigScreen.kt
++++ feature/quiz-config/src/main/java/com/cglhustle/feature/quizconfig/presentation/QuizConfigScreen.kt
+@@ -73,7 +73,7 @@
+                         }
+                     } else {
+                         QuizConfigContent(
+-                            options = state.filters,
++                            options = state.data,
+                             onStartQuiz = { payload ->
+                                 viewModel.startSession(payload)
+                             }
+--- feature/quiz-config/src/main/java/com/cglhustle/feature/quizconfig/presentation/QuizConfigViewModel.kt
++++ feature/quiz-config/src/main/java/com/cglhustle/feature/quizconfig/presentation/QuizConfigViewModel.kt
+@@ -38,7 +38,7 @@
+                 val filters = repository.fetchAvailableFilters()
+                 _uiState.value = UiState.Success(filters)
+             } catch (e: Exception) {
+-                _uiState.value = UiState.Error(com.cglhustle.core.common.error.AppError.NetworkError)
++                _uiState.value = UiState.Error(com.cglhustle.core.common.error.AppError.NetworkError(e))
+             }
+         }
+     }
