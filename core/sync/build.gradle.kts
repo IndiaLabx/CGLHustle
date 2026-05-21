@@ -32,6 +32,8 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:network"))
     implementation(project(":feature:active-session"))
+    implementation(project(":feature:quiz-config"))
+    implementation(project(":feature:results"))
 
     implementation(libs.androidx.core.ktx)
     implementation(project(":core:common"))

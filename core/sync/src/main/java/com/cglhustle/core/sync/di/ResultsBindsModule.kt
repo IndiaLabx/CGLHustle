@@ -1,6 +1,6 @@
-package com.cglhustle.feature.results.di
+package com.cglhustle.core.sync.di
 
-import com.cglhustle.feature.results.data.repository.ResultsRepositoryImpl
+import com.cglhustle.core.sync.domain.ResultsRepositoryImpl
 import com.cglhustle.feature.results.domain.repository.ResultsRepository
 import dagger.Binds
 import dagger.Module
@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class ResultsModule {
+abstract class ResultsBindsModule {
 
     @Binds
     @Singleton
