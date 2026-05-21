@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.cglhustle.core.database.entity.SyncEventEntity
 import com.cglhustle.core.database.entity.UserAnswerEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class UserAnswerDao {
@@ -48,4 +49,7 @@ abstract class UserAnswerDao {
 
     @Query("SELECT * FROM user_answers WHERE sessionId = :sessionId ORDER BY attemptSequence ASC")
     abstract suspend fun getAllAnswersForSession(sessionId: String): List<UserAnswerEntity>
+
+    @Query("SELECT * FROM user_answers WHERE sessionId = :sessionId ORDER BY attemptSequence ASC")
+    abstract fun observeAllAnswersForSession(sessionId: String): Flow<List<UserAnswerEntity>>
 }

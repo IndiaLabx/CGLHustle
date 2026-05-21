@@ -1,14 +1,21 @@
 package com.cglhustle.feature.activesession.domain
 
+import kotlinx.coroutines.flow.Flow
+
 interface ActiveSessionRepository {
+    fun observeSessionData(userId: String, sessionId: String): Flow<ActiveSessionData?>
+
     suspend fun getQuestions(sessionId: String): List<Question>
     suspend fun submitAnswer(
         userId: String,
         sessionId: String,
         questionId: String,
         eventId: String,
-        idempotencyKey: String
-    ): Result<FeatureMutationAckResponse>
+        idempotencyKey: String,
+        selectedOptionId: String,
+        attemptSequence: Int
+    ): Result<Unit>
+
     suspend fun pauseSession(sessionId: String): Result<Boolean>
     suspend fun resumeSession(sessionId: String): Result<Boolean>
     suspend fun submitSession(sessionId: String): Result<Boolean>

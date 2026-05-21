@@ -7,7 +7,6 @@ import com.cglhustle.feature.activesession.domain.ActiveSessionData
 import com.cglhustle.feature.activesession.domain.ActiveSessionRepository
 import com.cglhustle.feature.activesession.domain.PendingMutation
 import com.cglhustle.feature.activesession.domain.SessionStatus
-import com.cglhustle.feature.activesession.domain.FeatureMutationStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -39,6 +40,9 @@ class ActiveSessionViewModel @Inject constructor(
     private var currentSessionId: String = ""
     private var userId: String = "mock_user_id" // Mock user id
 
+    private var currentQuestions: List<com.cglhustle.feature.activesession.domain.Question> = emptyList()
+    private var observeJob: Job? = null
+
     fun initialize(sessionId: String?) {
         if (initialized) return
         initialized = true
@@ -48,15 +52,37 @@ class ActiveSessionViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {
-                val questions = repository.getQuestions(currentSessionId)
-                _uiState.value = UiState.Success(
-                    ActiveSessionData(
-                        sessionId = currentSessionId,
-                        questions = questions
-                    )
-                )
+                currentQuestions = repository.getQuestions(currentSessionId)
+
+                observeJob?.cancel()
+                observeJob = launch {
+                    repository.observeSessionData(userId, currentSessionId).collectLatest { data ->
+                        if (data != null) {
+                            val currentIdx = (_uiState.value as? UiState.Success)?.data?.currentQuestionIndex ?: 0
+                            val prevStatus = (_uiState.value as? UiState.Success)?.data?.status
+
+                            _uiState.value = UiState.Success(
+                                data.copy(
+                                    questions = currentQuestions,
+                                    currentQuestionIndex = currentIdx
+                                )
+                            )
+
+                            // Fire completion event once it goes to COMPLETED
+                            if (prevStatus == SessionStatus.SUBMITTING && data.status == SessionStatus.COMPLETED) {
+                                _events.emit(ActiveSessionEvent.SessionCompleted(currentSessionId))
+                            } else if (data.status == SessionStatus.COMPLETED && prevStatus != SessionStatus.COMPLETED) {
+                                _events.emit(ActiveSessionEvent.SessionCompleted(currentSessionId))
+                            }
+                        } else {
+                            // Empty state, or not started. For now we will keep it simple.
+                             _uiState.value = UiState.Success(
+                                ActiveSessionData(sessionId = currentSessionId, questions = currentQuestions)
+                            )
+                        }
+                    }
+                }
             } catch (e: Exception) {
-                // Should use AppErrorMapper in real scenario
                 _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to load session: ${e.message}"))
             }
         }
@@ -70,84 +96,21 @@ class ActiveSessionViewModel @Inject constructor(
 
         val eventId = UUID.randomUUID().toString().replace("-", "").take(26).uppercase()
         val idempotencyKey = UUID.randomUUID().toString()
+        val attemptSequence = 1 // Simplified for this sprint
 
-        // Optimistic Update
-        val newPendingMutation = PendingMutation(questionId, optionId, eventId)
-        val updatedAnswers = currentData.selectedAnswers + (questionId to optionId)
-        val updatedPending = currentData.pendingMutations + (questionId to newPendingMutation)
-
-        _uiState.update {
-            UiState.Success(
-                currentData.copy(
-                    selectedAnswers = updatedAnswers,
-                    pendingMutations = updatedPending
-                )
-            )
-        }
-
-        // Fire request to server
         viewModelScope.launch {
             try {
-                val responseResult = repository.submitAnswer(
+                repository.submitAnswer(
                     userId = userId,
                     sessionId = currentData.sessionId,
                     questionId = questionId,
                     eventId = eventId,
-                    idempotencyKey = idempotencyKey
-                )
-
-                responseResult.fold(
-                    onSuccess = { response ->
-                        reconcileMutation(questionId, eventId, response.status)
-                    },
-                    onFailure = {
-                         reconcileMutation(questionId, eventId, FeatureMutationStatus.CONFLICT)
-                        _events.emit(ActiveSessionEvent.ShowSnackbar("Network error submitting answer. Please try again."))
-                    }
+                    idempotencyKey = idempotencyKey,
+                    selectedOptionId = optionId,
+                    attemptSequence = attemptSequence
                 )
             } catch (e: Exception) {
-                // Treat network failure similar to conflict for now, or just show error and clear pending
-                reconcileMutation(questionId, eventId, FeatureMutationStatus.CONFLICT)
-                _events.emit(ActiveSessionEvent.ShowSnackbar("Network error submitting answer. Please try again."))
-            }
-        }
-    }
-
-    private fun reconcileMutation(questionId: String, eventId: String, status: FeatureMutationStatus) {
-        _uiState.update { state ->
-            if (state !is UiState.Success) return@update state
-            val data = state.data
-
-            val pending = data.pendingMutations[questionId]
-
-            // If the pending mutation eventId doesn't match, it means a newer mutation is in flight.
-            // We ignore this old response.
-            if (pending?.eventId != eventId) return@update state
-
-            val updatedPending = data.pendingMutations - questionId
-
-            if (status == FeatureMutationStatus.CONFLICT) {
-                // Revert the answer on conflict
-                val updatedAnswers = data.selectedAnswers - questionId
-                UiState.Success(
-                    data.copy(
-                        selectedAnswers = updatedAnswers,
-                        pendingMutations = updatedPending
-                    )
-                )
-            } else {
-                // APPLIED or NOOP: Keep the answer, just clear pending status
-                UiState.Success(
-                    data.copy(
-                        pendingMutations = updatedPending
-                    )
-                )
-            }
-        }
-
-        if (status == FeatureMutationStatus.CONFLICT) {
-            viewModelScope.launch {
-                _events.emit(ActiveSessionEvent.ShowSnackbar("Conflict detected. Server state restored."))
+                _events.emit(ActiveSessionEvent.ShowSnackbar("Error saving answer locally."))
             }
         }
     }
@@ -168,10 +131,6 @@ class ActiveSessionViewModel @Inject constructor(
         if (currentState is UiState.Success) {
             viewModelScope.launch {
                 val isPaused = currentState.data.status == SessionStatus.PAUSED
-                val newStatus = if (isPaused) SessionStatus.ACTIVE else SessionStatus.PAUSED
-                val updatedData = currentState.data.copy(status = newStatus)
-                _uiState.value = UiState.Success(updatedData)
-
                 if (isPaused) {
                     repository.resumeSession(currentSessionId)
                 } else {
@@ -185,43 +144,11 @@ class ActiveSessionViewModel @Inject constructor(
         val currentState = _uiState.value as? UiState.Success ?: return
         val currentData = currentState.data
 
-        _uiState.update {
-            UiState.Success(currentData.copy(status = SessionStatus.SUBMITTING))
-        }
-
         viewModelScope.launch {
             try {
-                val result = repository.submitSession(currentData.sessionId)
-
-                result.fold(
-                    onSuccess = { res ->
-                        if (res) {
-                            _uiState.update { state ->
-                                if (state is UiState.Success) {
-                                    UiState.Success(state.data.copy(status = SessionStatus.COMPLETED))
-                                } else state
-                            }
-                            _events.emit(ActiveSessionEvent.SessionCompleted(currentData.sessionId))
-                        } else {
-                            throw Exception("Submit failed")
-                        }
-                    },
-                    onFailure = {
-                        _uiState.update { state ->
-                            if (state is UiState.Success) {
-                                UiState.Success(state.data.copy(status = SessionStatus.ACTIVE))
-                            } else state
-                        }
-                        _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to submit session. Try again."))
-                    }
-                )
+                repository.submitSession(currentData.sessionId)
             } catch (e: Exception) {
-                 _uiState.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(state.data.copy(status = SessionStatus.ACTIVE))
-                    } else state
-                }
-                _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to submit session. Try again."))
+                _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to submit session locally."))
             }
         }
     }
