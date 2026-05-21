@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
@@ -13,9 +16,23 @@ android {
         buildConfig = true
     }
 
+    // Load properties from local.properties if it exists (for local development)
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(FileInputStream(localPropertiesFile))
+    }
+
+    // Try to get values from Env variables (GitHub Actions) first, then local.properties, then fallback to empty string
+    val supabaseUrlEnv = System.getenv("SUPABASE_URL")
+    val supabaseUrl = if (!supabaseUrlEnv.isNullOrEmpty()) supabaseUrlEnv else localProperties.getProperty("SUPABASE_URL", "")
+
+    val supabaseKeyEnv = System.getenv("SUPABASE_ANON_KEY")
+    val supabaseAnonKey = if (!supabaseKeyEnv.isNullOrEmpty()) supabaseKeyEnv else localProperties.getProperty("SUPABASE_ANON_KEY", "")
+
     defaultConfig {
-        buildConfigField("String", "SUPABASE_URL", "\"\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         minSdk = 26
     }
     compileOptions {
@@ -60,5 +77,4 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     implementation(libs.kotlinx.serialization.json)
-
 }
