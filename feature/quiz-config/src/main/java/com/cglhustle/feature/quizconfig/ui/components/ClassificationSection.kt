@@ -26,7 +26,6 @@ fun ClassificationSection(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Subjects
         ClassificationRow(
             title = "Subject",
             items = subjects,
@@ -35,7 +34,6 @@ fun ClassificationSection(
             enabled = true
         )
 
-        // Topics - Enabled only if a subject is selected
         val topicsEnabled = selectedSubject.isNotEmpty()
         ClassificationRow(
             title = "Topic",
@@ -45,7 +43,6 @@ fun ClassificationSection(
             enabled = topicsEnabled
         )
 
-        // Sub-topics - Enabled only if a topic is selected
         val subTopicsEnabled = selectedTopic.isNotEmpty()
         ClassificationRow(
             title = "Sub-Topic",
@@ -84,12 +81,14 @@ private fun ClassificationRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(items) { item ->
+                    // Apply glass style through colors mapping where appropriate, using standard FilterChip for semantics
                     FilterChip(
                         selected = item == selectedItem,
                         onClick = { if (enabled) onItemSelected(item) },
                         label = { Text(item) },
                         enabled = enabled,
                         colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), // Glass-like off state
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
