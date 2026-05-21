@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.cglhustle.feature.results"
+    namespace = "com.cglhustle.feature.dashboard"
     compileSdk = 34
 
     defaultConfig {
@@ -18,6 +18,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs = listOf("-Xsuppress-warning=DEPRECATION")
     }
     buildFeatures {
         compose = true
@@ -29,22 +30,20 @@ android {
         abortOnError = true
         warningsAsErrors = true
         disable += "ObsoleteLintCustomCheck"
-        disable += "GradleDependency"
     }
 }
 
 dependencies {
-    implementation(project(":core:common"))
-
+    implementation(project(":core:ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 }

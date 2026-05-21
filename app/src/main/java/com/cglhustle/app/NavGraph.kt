@@ -9,6 +9,8 @@ import com.cglhustle.feature.auth.AuthRoute
 import com.cglhustle.feature.quizconfig.QuizConfigRoute
 import com.cglhustle.feature.activesession.ActiveSessionRoute
 import com.cglhustle.feature.results.ResultsRoute
+import com.cglhustle.feature.dashboard.ui.DashboardRoute
+import com.cglhustle.feature.mcqs.ui.McqRoute
 
 @Composable
 fun AppNavGraph(
@@ -22,10 +24,25 @@ fun AppNavGraph(
         composable("auth") {
             AuthRoute(
                 onAuthSuccess = {
-                    navController.navigate("quizConfig") {
+                    navController.navigate("dashboard") {
                         popUpTo("auth") { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable("dashboard") {
+            DashboardRoute(
+                onNavigateToMcq = {
+                    navController.navigate("mcqs")
+                }
+            )
+        }
+
+        composable("mcqs") {
+            McqRoute(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCreateQuiz = { navController.navigate("quizConfig") }
             )
         }
 
