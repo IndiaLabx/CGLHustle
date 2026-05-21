@@ -1,12 +1,14 @@
 package com.cglhustle.feature.quizconfig.domain.model
 
 data class QuizConfigPayload(
-    val subject: String,
-    val topic: String,
-    val subTopic: String? = null,
+    val subjects: List<String> = emptyList(),
+    val topics: List<String> = emptyList(),
+    val subTopics: List<String> = emptyList(),
     val difficulty: String,
-    val examYear: String,
-    val shift: String,
+    val examNames: List<String> = emptyList(),
+    val examYears: List<String> = emptyList(),
+    val shifts: List<String> = emptyList(),
+    val tags: List<String> = emptyList(),
     val mode: QuizMode = QuizMode.LEARNING,
     val questionCount: Int = 10,
     val questionType: String = "MCQ",
