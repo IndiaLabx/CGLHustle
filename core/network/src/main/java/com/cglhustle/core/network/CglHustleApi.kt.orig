@@ -3,6 +3,9 @@ package com.cglhustle.core.network
 import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.ServerAckResponseDto
 import com.cglhustle.core.network.dto.QuizSessionStateDto
+import com.cglhustle.core.network.dto.QuizFiltersDto
+import com.cglhustle.core.network.dto.QuizConfigPayloadDto
+import com.cglhustle.core.network.dto.CreateSessionResponseDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -23,6 +26,17 @@ class CglHustleApi @Inject constructor(
         return httpClient.post("/rest/v1/rpc/upsert_user_answer_safe") {
             contentType(ContentType.Application.Json)
             setBody(request)
+        }.body()
+    }
+
+    suspend fun getQuizFilters(): QuizFiltersDto {
+        return httpClient.get("/rest/v1/rpc/get_quiz_filters").body()
+    }
+
+    suspend fun createQuizSession(payload: QuizConfigPayloadDto): CreateSessionResponseDto {
+        return httpClient.post("/rest/v1/rpc/create_quiz_session") {
+            contentType(ContentType.Application.Json)
+            setBody(payload)
         }.body()
     }
 }
