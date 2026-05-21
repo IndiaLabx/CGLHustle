@@ -133,6 +133,17 @@ fun ActiveSessionContent(
             return
         }
 
+        if (data.status == SessionStatus.SUBMITTING) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    CircularProgressIndicator()
+                    Text("Submitting to Server...", style = MaterialTheme.typography.headlineMedium)
+                    Text("Please wait", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+            return
+        }
+
         // Current Question
         val currentQuestion = data.currentQuestion
         if (currentQuestion != null) {

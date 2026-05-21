@@ -197,10 +197,6 @@ class UserAnswerDaoTest {
                 return 0
             }
 
-            override fun observeAllAnswersForSession(sessionId: String): kotlinx.coroutines.flow.Flow<List<UserAnswerEntity>> {
-                return kotlinx.coroutines.flow.emptyFlow()
-            }
-
             override suspend fun saveAnswerWithOutbox(
                 answer: UserAnswerEntity,
                 syncEvent: SyncEventEntity,

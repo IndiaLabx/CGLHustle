@@ -3,7 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
-    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
@@ -47,7 +46,6 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

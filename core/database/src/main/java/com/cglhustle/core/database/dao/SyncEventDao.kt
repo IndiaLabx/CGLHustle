@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.cglhustle.core.database.entity.SyncEventEntity
 import com.cglhustle.core.database.entity.SyncStatus
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class SyncEventDao {
@@ -62,4 +63,7 @@ abstract class SyncEventDao {
 
     @Query("SELECT COUNT(*) FROM sync_events WHERE status IN (:statuses)")
     abstract suspend fun countEventsWithStatus(statuses: List<SyncStatus>): Int
+
+    @Query("SELECT * FROM sync_events WHERE userId = :userId")
+    abstract fun observeAllSyncEvents(userId: String): Flow<List<SyncEventEntity>>
 }
