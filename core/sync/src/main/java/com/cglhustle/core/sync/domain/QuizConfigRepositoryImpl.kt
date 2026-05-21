@@ -27,19 +27,23 @@ class QuizConfigRepositoryImpl @Inject constructor(
             topics = dto.topics,
             subTopics = dto.subTopics,
             difficulties = dto.difficulties,
+            examNames = dto.examNames,
             examYears = dto.examYears,
-            shifts = dto.shifts
+            shifts = dto.shifts,
+            tags = dto.tags
         )
     }
 
     override suspend fun createSession(payload: QuizConfigPayload): String {
         val dto = QuizConfigPayloadDto(
-            subject = payload.subject,
-            topic = payload.topic,
-            subTopic = payload.subTopic,
+            subjects = payload.subjects,
+            topics = payload.topics,
+            subTopics = payload.subTopics,
             difficulty = payload.difficulty,
-            examYear = payload.examYear,
-            shift = payload.shift,
+            examNames = payload.examNames,
+            examYears = payload.examYears,
+            shifts = payload.shifts,
+            tags = payload.tags,
             mode = payload.mode.name,
             questionCount = payload.questionCount,
             questionType = payload.questionType,
