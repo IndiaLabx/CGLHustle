@@ -12,6 +12,7 @@ import com.cglhustle.core.network.SyncNetworkDataSource
 class FakeSyncNetworkDataSource : SyncNetworkDataSource {
 
     var shouldFailWithAuth = false
+    var shouldFailWithConflict = false
     var shouldFailWithException = false
 
     val pushedEvents = mutableListOf<SyncEventEntity>()
@@ -19,6 +20,9 @@ class FakeSyncNetworkDataSource : SyncNetworkDataSource {
     override suspend fun pushEvent(event: SyncEventEntity): AppResult<Unit, AppError> {
         if (shouldFailWithAuth) {
             return Failure(NetworkError.AuthExpired())
+        }
+        if (shouldFailWithConflict) {
+            return Failure(NetworkError.Conflict())
         }
         if (shouldFailWithException) {
             return Failure(UnknownError())

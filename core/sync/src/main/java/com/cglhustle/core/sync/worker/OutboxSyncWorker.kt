@@ -109,6 +109,21 @@ class OutboxSyncWorker @AssistedInject constructor(
                                 syncOrchestrator.setAuthBlocked(true)
                                 break // Halt batch
                             }
+                            is NetworkError.Conflict -> {
+                                logger.log(
+                                    level = LogLevel.WARN,
+                                    module = "OutboxSyncWorker",
+                                    event = "sync_mutation_conflict",
+                                    correlationId = processingToken,
+                                    payload = "{\"idempotencyKey\": \"${event.idempotencyKey}\", \"eventId\": \"${event.id}\", \"resolution_action\": \"dropped_from_queue\"}"
+                                )
+                                syncEventDao.updateEventCheckpoint(
+                                    id = event.id,
+                                    status = SyncStatus.RESOLVED_DROPPED,
+                                    processingToken = null,
+                                    lastAttemptAt = System.currentTimeMillis()
+                                )
+                            }
                             else -> {
                                 hasFailure = true
                                 logger.log(

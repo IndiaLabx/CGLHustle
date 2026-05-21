@@ -25,6 +25,10 @@ import androidx.work.CoroutineWorker
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
+import kotlinx.coroutines.flow.firstOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class OutboxSyncWorkerTest {
@@ -124,6 +128,50 @@ class OutboxSyncWorkerTest {
         val updatedEvent = syncEventDao.getPendingEvents(listOf(SyncStatus.FAILED_RETRY)).firstOrNull { it.id == id }
         assertNotNull(updatedEvent)
         assertEquals(SyncStatus.FAILED_RETRY, updatedEvent?.status)
+    }
+
+
+    @Test
+    fun `Conflict path correctly resolves event and logs warning`() = runTest {
+        val event = SyncEventEntity(
+            userId = "user1", idempotencyKey = "key_conflict", eventType = SyncEventType.UPSERT_SESSION,
+            payload = "{}", status = SyncStatus.PENDING, createdAt = System.currentTimeMillis(),
+            nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
+        )
+        val id = syncEventDao.insertEvent(event)
+
+        fakeNetwork.shouldFailWithConflict = true
+
+        val mockLogger = mock(com.cglhustle.core.common.logging.StructuredLogger::class.java)
+
+        val worker = TestListenableWorkerBuilder<OutboxSyncWorker>(context)
+            .setWorkerFactory(object : androidx.work.WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: androidx.work.WorkerParameters
+                ): ListenableWorker {
+                    return OutboxSyncWorker(appContext, workerParameters, syncEventDao, fakeNetwork, syncOrchestrator, mockLogger)
+                }
+            })
+            .build()
+
+        val result = (worker as CoroutineWorker).doWork()
+        assertEquals(ListenableWorker.Result.success(), result)
+
+        val allEvents = syncEventDao.observeAllSyncEvents("user1").firstOrNull() ?: emptyList()
+        val updatedEvent = allEvents.find { it.id == id }
+        assertNotNull(updatedEvent)
+        assertEquals(SyncStatus.RESOLVED_DROPPED, updatedEvent?.status)
+
+        verify(mockLogger).log(
+            level = eq(com.cglhustle.core.common.logging.LogLevel.WARN),
+            module = eq("OutboxSyncWorker"),
+            event = eq("sync_mutation_conflict"),
+            correlationId = any(),
+            payload = any(),
+            throwable = anyOrNull()
+        )
     }
 
     @Test
