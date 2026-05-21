@@ -85,6 +85,10 @@ dependencies {
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:mcqs"))
 
+    // Supabase Auth dependencies
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.gotrue)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.process)
