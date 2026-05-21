@@ -35,9 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cglhustle.core.network.dto.AttemptedQuestionDto
-import com.cglhustle.core.network.dto.BookmarkedQuestionDto
-import com.cglhustle.core.network.dto.ResultsAnalyticsDto
+import com.cglhustle.feature.results.domain.model.AttemptedQuestion
+import com.cglhustle.feature.results.domain.model.BookmarkedQuestion
+import com.cglhustle.feature.results.domain.model.ResultsAnalytics
 import com.cglhustle.feature.results.viewmodel.ResultsUiState
 import com.cglhustle.feature.results.viewmodel.ResultsViewModel
 import com.cglhustle.core.common.error.AppError
@@ -107,7 +107,7 @@ fun AnalyticsContent(viewModel: ResultsViewModel) {
 }
 
 @Composable
-fun AnalyticsView(data: ResultsAnalyticsDto) {
+fun AnalyticsView(data: ResultsAnalytics) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -145,7 +145,7 @@ fun AttemptedContent(viewModel: ResultsViewModel) {
 }
 
 @Composable
-fun AttemptedListView(questions: List<AttemptedQuestionDto>) {
+fun AttemptedListView(questions: List<AttemptedQuestion>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
@@ -193,7 +193,7 @@ fun BookmarksContent(viewModel: ResultsViewModel) {
 }
 
 @Composable
-fun BookmarksListView(questions: List<BookmarkedQuestionDto>) {
+fun BookmarksListView(questions: List<BookmarkedQuestion>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)

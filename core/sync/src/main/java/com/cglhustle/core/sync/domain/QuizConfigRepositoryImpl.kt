@@ -1,4 +1,4 @@
-package com.cglhustle.feature.quizconfig.data.repository
+package com.cglhustle.core.sync.domain
 
 import com.cglhustle.core.network.CglHustleApi
 import com.cglhustle.core.network.dto.QuizConfigPayloadDto

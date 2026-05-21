@@ -7,9 +7,9 @@ import com.cglhustle.core.common.error.AppError
 import com.cglhustle.core.common.error.AppResult
 import com.cglhustle.core.common.error.Failure
 import com.cglhustle.core.common.error.Success
-import com.cglhustle.core.network.dto.AttemptedQuestionDto
-import com.cglhustle.core.network.dto.BookmarkedQuestionDto
-import com.cglhustle.core.network.dto.ResultsAnalyticsDto
+import com.cglhustle.feature.results.domain.model.AttemptedQuestion
+import com.cglhustle.feature.results.domain.model.BookmarkedQuestion
+import com.cglhustle.feature.results.domain.model.ResultsAnalytics
 import com.cglhustle.feature.results.domain.repository.ResultsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,14 +34,14 @@ class ResultsViewModel @Inject constructor(
 
     private val sessionId: String = savedStateHandle.get<String>("sessionId") ?: "mock_results_001"
 
-    private val _analyticsState = MutableStateFlow<ResultsUiState<ResultsAnalyticsDto>>(ResultsUiState.Loading)
-    val analyticsState: StateFlow<ResultsUiState<ResultsAnalyticsDto>> = _analyticsState.asStateFlow()
+    private val _analyticsState = MutableStateFlow<ResultsUiState<ResultsAnalytics>>(ResultsUiState.Loading)
+    val analyticsState: StateFlow<ResultsUiState<ResultsAnalytics>> = _analyticsState.asStateFlow()
 
-    private val _attemptedState = MutableStateFlow<ResultsUiState<List<AttemptedQuestionDto>>>(ResultsUiState.Loading)
-    val attemptedState: StateFlow<ResultsUiState<List<AttemptedQuestionDto>>> = _attemptedState.asStateFlow()
+    private val _attemptedState = MutableStateFlow<ResultsUiState<List<AttemptedQuestion>>>(ResultsUiState.Loading)
+    val attemptedState: StateFlow<ResultsUiState<List<AttemptedQuestion>>> = _attemptedState.asStateFlow()
 
-    private val _bookmarksState = MutableStateFlow<ResultsUiState<List<BookmarkedQuestionDto>>>(ResultsUiState.Loading)
-    val bookmarksState: StateFlow<ResultsUiState<List<BookmarkedQuestionDto>>> = _bookmarksState.asStateFlow()
+    private val _bookmarksState = MutableStateFlow<ResultsUiState<List<BookmarkedQuestion>>>(ResultsUiState.Loading)
+    val bookmarksState: StateFlow<ResultsUiState<List<BookmarkedQuestion>>> = _bookmarksState.asStateFlow()
 
     init {
         // Initial fetch for the first tab
