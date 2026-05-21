@@ -82,6 +82,8 @@ dependencies {
     implementation(project(":feature:quiz-config"))
     implementation(project(":feature:active-session"))
     implementation(project(":feature:results"))
+    implementation(project(":feature:dashboard"))
+    implementation(project(":feature:mcqs"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

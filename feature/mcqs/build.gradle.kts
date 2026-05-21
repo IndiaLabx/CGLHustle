@@ -3,11 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
-    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
-    namespace = "com.cglhustle.feature.quizconfig"
+    namespace = "com.cglhustle.feature.mcqs"
     compileSdk = 34
 
     defaultConfig {
@@ -19,6 +18,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs = listOf("-Xsuppress-warning=DEPRECATION")
     }
     buildFeatures {
         compose = true
@@ -34,17 +34,13 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.process)
-    implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
-    implementation(project(":core:network"))
-    implementation(project(":core:database"))
-    implementation(project(":core:common"))
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.material.icons.extended)
 
     // Hilt
     implementation(libs.hilt.android)
