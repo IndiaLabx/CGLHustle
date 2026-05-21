@@ -24,6 +24,9 @@ jobs:
 
     - name: Run Clean, Build, Lint, and Tests
       run: ./gradlew clean assembleDebug lint test
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
     - name: Upload Lint Reports
       if: always()
