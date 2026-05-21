@@ -36,9 +36,9 @@ fun AdvancedFiltersSection(
     onRemoveTag: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    GlassSurface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
@@ -74,7 +74,6 @@ fun AdvancedFiltersSection(
             }
 
             // Expandable Content
-            // Manually handle visibility without AnimatedVisibility which uses exit
             if (isExpanded) {
                 Column(
                     modifier = Modifier
