@@ -7,6 +7,12 @@ sealed interface AppError {
 
 sealed interface NetworkError : AppError {
 
+    data class Conflict(
+        override val telemetryCode: String = "ERR_NET_CONFLICT",
+        override val recoveryAction: RecoveryAction = RecoveryAction.RETRY_SILENTLY
+    ) : NetworkError
+
+
     data class Transient(
         override val telemetryCode: String = "ERR_NET_TRANSIENT",
         override val recoveryAction: RecoveryAction = RecoveryAction.RETRY_SILENTLY

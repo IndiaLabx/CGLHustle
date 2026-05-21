@@ -24,6 +24,7 @@ fun Throwable.toAppError(): AppError {
             when (response.status.value) {
                 401 -> NetworkError.AuthExpired()
                 404 -> NetworkError.NotFound()
+                409 -> NetworkError.Conflict()
                 in 500..599 -> NetworkError.ServerOutage()
                 else -> NetworkError.Transient()
             }
@@ -46,6 +47,7 @@ fun Throwable.toAppError(): AppError {
  */
 fun AppError.toUserFriendlyMessage(): String {
     return when (this) {
+        is NetworkError.Conflict -> "We encountered a conflict syncing your data."
         is NetworkError.Transient -> "We're having trouble reaching the network. Please check your connection."
         is NetworkError.AuthExpired -> "Your session has expired. Please log in again to sync your progress."
         is NetworkError.NotFound -> "We couldn't find what you were looking for."
