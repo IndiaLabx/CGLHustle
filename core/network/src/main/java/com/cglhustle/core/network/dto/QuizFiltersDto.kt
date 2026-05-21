@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class QuizFiltersDto(
     @SerialName("subjects") val subjects: List<String>,
     @SerialName("topics") val topics: List<String>,
+    @SerialName("sub_topics") val subTopics: List<String> = emptyList(),
     @SerialName("difficulties") val difficulties: List<String>,
     @SerialName("exam_years") val examYears: List<String>,
     @SerialName("shifts") val shifts: List<String>

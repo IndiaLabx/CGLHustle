@@ -25,6 +25,7 @@ class QuizConfigRepositoryImpl @Inject constructor(
         return QuizFilterOptions(
             subjects = dto.subjects,
             topics = dto.topics,
+            subTopics = dto.subTopics,
             difficulties = dto.difficulties,
             examYears = dto.examYears,
             shifts = dto.shifts
@@ -35,9 +36,14 @@ class QuizConfigRepositoryImpl @Inject constructor(
         val dto = QuizConfigPayloadDto(
             subject = payload.subject,
             topic = payload.topic,
+            subTopic = payload.subTopic,
             difficulty = payload.difficulty,
             examYear = payload.examYear,
-            shift = payload.shift
+            shift = payload.shift,
+            mode = payload.mode.name,
+            questionCount = payload.questionCount,
+            questionType = payload.questionType,
+            quizName = payload.quizName
         )
 
         val response = api.createQuizSession(dto)
