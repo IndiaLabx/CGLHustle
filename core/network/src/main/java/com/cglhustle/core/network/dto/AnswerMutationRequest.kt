@@ -8,5 +8,6 @@ data class AnswerMutationRequest(
     val sessionId: String,
     val questionId: String,
     val eventId: String,
+    val attemptSequence: Int,
     val idempotencyKey: String
 )
