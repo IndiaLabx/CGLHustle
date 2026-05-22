@@ -2,53 +2,155 @@ package com.cglhustle.feature.quizconfig.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cglhustle.feature.quizconfig.domain.model.QuizConfigPayload
+import com.cglhustle.feature.quizconfig.domain.model.QuestionMetadata
+import com.cglhustle.feature.quizconfig.domain.model.QuizFilterOptions
 import com.cglhustle.feature.quizconfig.domain.model.QuizMode
-import com.cglhustle.feature.quizconfig.domain.repository.QuizConfigRepository
+import com.cglhustle.feature.quizconfig.domain.repository.QuestionMetadataRepository
+import com.cglhustle.feature.quizconfig.domain.repository.QuizRepository
 import com.cglhustle.feature.quizconfig.ui.state.FilterType
 import com.cglhustle.feature.quizconfig.ui.state.QuizConfigUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import javax.inject.Inject
 
 @HiltViewModel
 class QuizConfigViewModel @Inject constructor(
-    private val repository: QuizConfigRepository
+    private val metadataRepository: QuestionMetadataRepository,
+    private val quizRepository: QuizRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuizConfigUiState())
     val uiState: StateFlow<QuizConfigUiState> = _uiState.asStateFlow()
 
+    private var allMetadata: List<QuestionMetadata> = emptyList()
+
+    // Inverted Index Structure
+    // Category -> Value -> Set of Question IDs
+    private var invertedIndex: Map<FilterType, Map<String, Set<String>>> = emptyMap()
+
+    private var currentFilteredIds: Set<String> = emptySet()
+
     init {
-        loadFilters()
+        loadMetadata()
     }
 
-    fun loadFilters() {
+    fun loadMetadata() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingFilters = true, error = null) }
             try {
-                val filters = repository.fetchAvailableFilters()
+                allMetadata = metadataRepository.fetchMetadata()
+                buildInvertedIndex(allMetadata)
+
+                // Extract filter options dynamically from metadata
+                val subjects = allMetadata.map { it.subject }.filter { it.isNotEmpty() }.distinct().sorted()
+                val topics = allMetadata.map { it.topic }.filter { it.isNotEmpty() }.distinct().sorted()
+                val subTopics = allMetadata.map { it.subTopic }.filter { it.isNotEmpty() }.distinct().sorted()
+                val difficulties = allMetadata.map { it.difficulty }.filter { it.isNotEmpty() }.distinct().sorted()
+                val examNames = allMetadata.map { it.examName }.filter { it.isNotEmpty() }.distinct().sorted()
+                val examYears = allMetadata.map { it.examYear }.filter { it.isNotEmpty() }.distinct().sorted()
+                val tags = allMetadata.flatMap { it.tags }.filter { it.isNotEmpty() }.distinct().sorted()
+
+                // Shifts aren't in metadata yet, but preserving structure for future if needed
+                val shifts = emptyList<String>()
+
+                val options = QuizFilterOptions(
+                    subjects = subjects,
+                    topics = topics,
+                    subTopics = subTopics,
+                    difficulties = difficulties,
+                    examNames = examNames,
+                    examYears = examYears,
+                    shifts = shifts,
+                    tags = tags
+                )
+
+                updateFilteredCounts()
+
                 _uiState.update {
                     it.copy(
                         isLoadingFilters = false,
-                        filterOptions = filters,
-                        availableQuestionCount = calculateMockAvailableCount()
+                        filterOptions = options
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoadingFilters = false,
-                        error = e.localizedMessage ?: "Unknown error occurred"
+                        error = e.localizedMessage ?: "Failed to load metadata"
                     )
                 }
             }
         }
     }
+
+    private suspend fun buildInvertedIndex(metadata: List<QuestionMetadata>) = withContext(Dispatchers.Default) {
+        val index = mutableMapOf<FilterType, MutableMap<String, MutableSet<String>>>()
+
+        // Initialize maps
+        FilterType.entries.forEach { index[it] = mutableMapOf() }
+
+        metadata.forEach { q ->
+            if (q.subject.isNotEmpty()) index[FilterType.SUBJECT]!!.getOrPut(q.subject) { mutableSetOf() }.add(q.id)
+            if (q.topic.isNotEmpty()) index[FilterType.TOPIC]!!.getOrPut(q.topic) { mutableSetOf() }.add(q.id)
+            if (q.subTopic.isNotEmpty()) index[FilterType.SUB_TOPIC]!!.getOrPut(q.subTopic) { mutableSetOf() }.add(q.id)
+            if (q.difficulty.isNotEmpty()) index[FilterType.DIFFICULTY]!!.getOrPut(q.difficulty) { mutableSetOf() }.add(q.id)
+            if (q.examName.isNotEmpty()) index[FilterType.EXAM_NAME]!!.getOrPut(q.examName) { mutableSetOf() }.add(q.id)
+            if (q.examYear.isNotEmpty()) index[FilterType.EXAM_YEAR]!!.getOrPut(q.examYear) { mutableSetOf() }.add(q.id)
+
+            q.tags.forEach { tag ->
+                if (tag.isNotEmpty()) index[FilterType.TAGS]!!.getOrPut(tag) { mutableSetOf() }.add(q.id)
+            }
+        }
+
+        invertedIndex = index
+    }
+
+    private fun updateFilteredCounts() {
+        val state = _uiState.value
+
+        var currentSet: Set<String>? = null
+
+        fun intersectWith(type: FilterType, values: Set<String>) {
+            if (values.isEmpty()) return
+
+            val typeMap = invertedIndex[type] ?: return
+
+            // Union of selected values within the SAME category (e.g., ExamName A OR ExamName B)
+            val valuesUnion = mutableSetOf<String>()
+            values.forEach { v ->
+                typeMap[v]?.let { valuesUnion.addAll(it) }
+            }
+
+            // Intersect with global set (Category 1 AND Category 2)
+            currentSet = if (currentSet == null) {
+                valuesUnion
+            } else {
+                currentSet!!.intersect(valuesUnion)
+            }
+        }
+
+        if (state.selectedSubject.isNotEmpty()) intersectWith(FilterType.SUBJECT, setOf(state.selectedSubject))
+        if (state.selectedTopic.isNotEmpty()) intersectWith(FilterType.TOPIC, setOf(state.selectedTopic))
+        if (state.selectedSubTopic.isNotEmpty()) intersectWith(FilterType.SUB_TOPIC, setOf(state.selectedSubTopic))
+        if (state.selectedDifficulty.isNotEmpty()) intersectWith(FilterType.DIFFICULTY, setOf(state.selectedDifficulty))
+
+        intersectWith(FilterType.EXAM_NAME, state.selectedExamNames)
+        intersectWith(FilterType.EXAM_YEAR, state.selectedYears)
+        intersectWith(FilterType.SHIFT, state.selectedShifts)
+        intersectWith(FilterType.TAGS, state.selectedTags)
+
+        currentFilteredIds = currentSet ?: allMetadata.map { it.id }.toSet()
+
+        _uiState.update { it.copy(availableQuestionCount = currentFilteredIds.size) }
+    }
+
 
     // --- Intent Handlers ---
 
@@ -57,33 +159,34 @@ class QuizConfigViewModel @Inject constructor(
             it.copy(
                 selectedSubject = subject,
                 selectedTopic = "", // Reset dependent
-                selectedSubTopic = "",
-                availableQuestionCount = calculateMockAvailableCount(subject = subject)
+                selectedSubTopic = ""
             )
         }
+        updateFilteredCounts()
     }
 
     fun selectTopic(topic: String) {
         _uiState.update {
             it.copy(
                 selectedTopic = topic,
-                selectedSubTopic = "", // Reset dependent
-                availableQuestionCount = calculateMockAvailableCount(topic = topic)
+                selectedSubTopic = "" // Reset dependent
             )
         }
+        updateFilteredCounts()
     }
 
     fun selectSubTopic(subTopic: String) {
         _uiState.update {
             it.copy(
-                selectedSubTopic = subTopic,
-                availableQuestionCount = calculateMockAvailableCount(subTopic = subTopic)
+                selectedSubTopic = subTopic
             )
         }
+        updateFilteredCounts()
     }
 
     fun selectDifficulty(difficulty: String) {
         _uiState.update { it.copy(selectedDifficulty = difficulty) }
+        updateFilteredCounts()
     }
 
     // Advanced Multi-Select Filters
@@ -94,11 +197,9 @@ class QuizConfigViewModel @Inject constructor(
             } else {
                 state.selectedExamNames + name
             }
-            state.copy(
-                selectedExamNames = newSet,
-                availableQuestionCount = calculateMockAvailableCount(examNames = newSet)
-            )
+            state.copy(selectedExamNames = newSet)
         }
+        updateFilteredCounts()
     }
 
     fun toggleYear(year: String) {
@@ -108,11 +209,9 @@ class QuizConfigViewModel @Inject constructor(
             } else {
                 state.selectedYears + year
             }
-            state.copy(
-                selectedYears = newSet,
-                availableQuestionCount = calculateMockAvailableCount(years = newSet)
-            )
+            state.copy(selectedYears = newSet)
         }
+        updateFilteredCounts()
     }
 
     fun toggleShift(shift: String) {
@@ -122,11 +221,9 @@ class QuizConfigViewModel @Inject constructor(
             } else {
                 state.selectedShifts + shift
             }
-            state.copy(
-                selectedShifts = newSet,
-                availableQuestionCount = calculateMockAvailableCount(shifts = newSet)
-            )
+            state.copy(selectedShifts = newSet)
         }
+        updateFilteredCounts()
     }
 
     fun toggleTag(tag: String) {
@@ -136,11 +233,9 @@ class QuizConfigViewModel @Inject constructor(
             } else {
                 state.selectedTags + tag
             }
-            state.copy(
-                selectedTags = newSet,
-                availableQuestionCount = calculateMockAvailableCount(tags = newSet)
-            )
+            state.copy(selectedTags = newSet)
         }
+        updateFilteredCounts()
     }
 
     fun removeTag(tag: String) = toggleTag(tag)
@@ -193,10 +288,10 @@ class QuizConfigViewModel @Inject constructor(
                 selectedTags = emptySet(),
                 selectedMode = QuizMode.LEARNING,
                 questionCount = 10,
-                quizName = "",
-                availableQuestionCount = calculateMockAvailableCount()
+                quizName = ""
             )
         }
+        updateFilteredCounts()
     }
 
     fun clearAdvancedFilters() {
@@ -205,68 +300,45 @@ class QuizConfigViewModel @Inject constructor(
                 selectedExamNames = emptySet(),
                 selectedYears = emptySet(),
                 selectedShifts = emptySet(),
-                selectedTags = emptySet(),
-                availableQuestionCount = calculateMockAvailableCount(
-                    examNames = emptySet(),
-                    years = emptySet(),
-                    shifts = emptySet(),
-                    tags = emptySet()
-                )
+                selectedTags = emptySet()
             )
         }
-    }
-
-    // --- Mock Count Calculation ---
-    private fun calculateMockAvailableCount(
-        subject: String = _uiState.value.selectedSubject,
-        topic: String = _uiState.value.selectedTopic,
-        subTopic: String = _uiState.value.selectedSubTopic,
-        examNames: Set<String> = _uiState.value.selectedExamNames,
-        years: Set<String> = _uiState.value.selectedYears,
-        shifts: Set<String> = _uiState.value.selectedShifts,
-        tags: Set<String> = _uiState.value.selectedTags
-    ): Int {
-        var count = 12482
-        if (subject.isNotEmpty()) count = (count * 0.4).toInt()
-        if (topic.isNotEmpty()) count = (count * 0.3).toInt()
-        if (subTopic.isNotEmpty()) count = (count * 0.2).toInt()
-
-        // Multi-select filters typically narrow the search space further if present
-        if (examNames.isNotEmpty()) count = (count * 0.6).toInt()
-        if (years.isNotEmpty()) count = (count * 0.8).toInt()
-        if (shifts.isNotEmpty()) count = (count * 0.9).toInt()
-        if (tags.isNotEmpty()) count = (count * 0.7).toInt()
-
-        return maxOf(count, 0)
+        updateFilteredCounts()
     }
 
     // --- Session Creation ---
     fun startSession() {
-        val state = _uiState.value
-        val payload = QuizConfigPayload(
-            subjects = listOfNotNull(state.selectedSubject.ifEmpty { null }),
-            topics = listOfNotNull(state.selectedTopic.ifEmpty { null }),
-            subTopics = listOfNotNull(state.selectedSubTopic.ifEmpty { null }),
-            difficulty = state.selectedDifficulty,
-            examNames = state.selectedExamNames.toList(),
-            examYears = state.selectedYears.toList(),
-            shifts = state.selectedShifts.toList(),
-            tags = state.selectedTags.toList(),
-            mode = state.selectedMode,
-            questionCount = state.questionCount,
-            quizName = state.quizName.ifEmpty { null }
-        )
+        if (currentFilteredIds.isEmpty()) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isCreatingSession = true) }
             try {
-                val sessionId = repository.createSession(payload)
-                _uiState.update { it.copy(sessionCreatedEvent = sessionId) }
+                val state = _uiState.value
+                val finalIds = currentFilteredIds.take(state.questionCount).toList()
+                val quizName = state.quizName.ifEmpty { "Custom Quiz" }
+                val mode = state.selectedMode.name.lowercase()
+
+                // Create a JSON string of active filters for history/resuming purposes
+                val filtersJson = JSONObject().apply {
+                    if (state.selectedSubject.isNotEmpty()) put("subject", state.selectedSubject)
+                    if (state.selectedTopic.isNotEmpty()) put("topic", state.selectedTopic)
+                    if (state.selectedSubTopic.isNotEmpty()) put("subTopic", state.selectedSubTopic)
+                    if (state.selectedDifficulty.isNotEmpty()) put("difficulty", state.selectedDifficulty)
+                }.toString()
+
+                val quizId = quizRepository.createQuiz(
+                    quizName = quizName,
+                    mode = mode,
+                    filters = filtersJson,
+                    questionIds = finalIds
+                )
+
+                _uiState.update { it.copy(sessionCreatedEvent = quizId) }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isCreatingSession = false,
-                        error = e.localizedMessage ?: "Failed to start session"
+                        error = e.localizedMessage ?: "Failed to create quiz"
                     )
                 }
             }

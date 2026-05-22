@@ -142,7 +142,7 @@ fun QuizConfigScreen(
                             text = uiState.error ?: "An unexpected error occurred",
                             color = MaterialTheme.colorScheme.error
                         )
-                        Button(onClick = { viewModel.loadFilters() }) {
+                        Button(onClick = { viewModel.loadMetadata() }) {
                             Text("Retry")
                         }
                     }
