@@ -36,6 +36,10 @@ android {
 dependencies {
     implementation(project(":core:ui"))
     implementation(libs.androidx.core.ktx)
+    implementation(project(":core:common"))
+    implementation(libs.ktor.client.core)
+    implementation(project(":core:network"))
+    implementation(project(":core:config"))
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

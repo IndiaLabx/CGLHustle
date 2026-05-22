@@ -31,8 +31,10 @@ jobs:
     - name: Build Release APK and AAB
       run: ./gradlew assembleRelease bundleRelease
       env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        CGL_HUSTLE_SUPABASE_URL: ${{ secrets.CGL_HUSTLE_SUPABASE_URL }}
+        CGL_HUSTLE_SUPABASE_ANON_KEY: ${{ secrets.CGL_HUSTLE_SUPABASE_ANON_KEY }}
+        GK_LLM_SUPABASE_URL: ${{ secrets.GK_LLM_SUPABASE_URL }}
+        GK_LLM_SUPABASE_ANON_KEY: ${{ secrets.GK_LLM_SUPABASE_ANON_KEY }}
 
     - name: Upload Release APK
       uses: actions/upload-artifact@v4

@@ -1,5 +1,6 @@
 package com.cglhustle.core.network.auth
 
+import com.cglhustle.core.config.PrimaryBackend
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.gotrue.auth
@@ -11,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    private val supabaseClient: SupabaseClient
+    @PrimaryBackend private val supabaseClient: SupabaseClient
 ) : AuthRepository {
 
     override val sessionStatus: StateFlow<SessionStatus> = supabaseClient.auth.sessionStatus
