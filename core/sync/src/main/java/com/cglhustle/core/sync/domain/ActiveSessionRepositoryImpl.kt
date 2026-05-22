@@ -36,11 +36,13 @@ class ActiveSessionRepositoryImpl @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     override suspend fun getInitialSessionData(userId: String, sessionId: String): ActiveSessionData? {
+        // STEP 1: Attempt to fetch from Server FIRST
+        // val serverResult = syncNetworkDataSource.fetchSession(sessionId)
+        // if (serverResult is Success) { return buildDataFromServer(serverResult.data) }
+
+        // STEP 2 & 3: Fallback to lightweight Room cache ONLY if needed
         val sessionEntity = quizSessionDao.getSessionById(sessionId) ?: return null
         val answers = userAnswerDao.getAllAnswersForSession(sessionId)
-
-        // In a full implementation, we'd fetch from Server here first.
-        // For now, we hydrate from Room as the lightweight cache fallback.
 
         val selectedAnswers = answers
             .filter { it.mutationType == AnswerMutationType.SELECT && it.selectedOption != null }
