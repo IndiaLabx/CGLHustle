@@ -45,6 +45,8 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(project(":core:ui"))
     implementation(project(":core:common"))
+    implementation(project(":core:network"))
+    implementation(libs.supabase.gotrue)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
 }

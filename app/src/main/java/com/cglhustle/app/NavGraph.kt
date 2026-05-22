@@ -56,7 +56,7 @@ fun AppNavGraph(
             ActiveSessionRoute(
                 onSessionComplete = { completedSessionId ->
                     navController.navigate("results/$completedSessionId") {
-                        popUpTo("quizConfig") { inclusive = false }
+                        popUpTo("activeSession/{sessionId}") { inclusive = true }
                     }
                 }
             )
@@ -65,8 +65,8 @@ fun AppNavGraph(
         composable("results/{sessionId}") {
             ResultsRoute(
                 onDone = {
-                    navController.navigate("quizConfig") {
-                        popUpTo("quizConfig") { inclusive = true }
+                    navController.navigate("dashboard") {
+                        popUpTo("dashboard") { inclusive = false }
                     }
                 }
             )

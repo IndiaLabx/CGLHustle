@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.cglhustle.core.network.auth.AuthRepository
+import io.github.jan.supabase.gotrue.SessionStatus as SupabaseSessionStatus
 
 sealed class ActiveSessionEvent {
     data class SessionCompleted(val sessionId: String) : ActiveSessionEvent()
@@ -25,7 +27,8 @@ sealed class ActiveSessionEvent {
 
 @HiltViewModel
 class ActiveSessionViewModel @Inject constructor(
-    private val repository: ActiveSessionRepository
+    private val repository: ActiveSessionRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<ActiveSessionData>>(UiState.Loading)
@@ -36,7 +39,11 @@ class ActiveSessionViewModel @Inject constructor(
 
     private var initialized = false
     private var currentSessionId: String = ""
-    private var userId: String = "mock_user_id" // Mock user id
+    private val userId: String
+        get() {
+            val session = authRepository.sessionStatus.value
+            return if (session is SupabaseSessionStatus.Authenticated) session.session.user?.id ?: "" else ""
+        }
 
     fun initialize(sessionId: String?) {
         if (initialized) return
