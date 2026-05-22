@@ -9,6 +9,7 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,36 +21,52 @@ class QuestionMetadataRepositoryImpl @Inject constructor(
 
     override suspend fun fetchMetadata(): List<QuestionMetadata> {
         return try {
-            val response = httpClient.get("/rest/v1/questions?select=id,subject,topic,subTopic,difficulty,questionType,examName,examYear,tags")
+            val allMetadata = mutableListOf<QuestionMetadata>()
+            var offset = 0
+            val limit = 1000
+            var hasMore = true
 
-            if (response.status.isSuccess()) {
-                val dtos: List<QuestionMetadataDto> = response.body()
-                dtos.map {
-                    QuestionMetadata(
-                        id = it.id,
-                        subject = it.subject ?: "",
-                        topic = it.topic ?: "",
-                        subTopic = it.subTopic ?: "",
-                        difficulty = it.difficulty ?: "",
-                        questionType = it.questionType ?: "",
-                        examName = it.examName ?: "",
-                        examYear = it.examYear?.toString() ?: "",
-                        tags = it.tags ?: emptyList()
-                    )
+            while (hasMore) {
+                val response = httpClient.get("/rest/v1/questions?select=id,subject,topic,subTopic,difficulty,questionType,examName,examYear,tags") {
+                    header("Range", "$offset-${offset + limit - 1}")
                 }
-            } else {
-                // If it's a non-200 code, throw an exception so it is properly caught upstream
-                // rather than attempting to deserialize an error JSON payload into a List.
-                throw Exception("Failed to fetch metadata. Server responded with: ${response.status}")
+
+                if (response.status.isSuccess()) {
+                    val dtos: List<QuestionMetadataDto> = response.body()
+                    if (dtos.isEmpty()) {
+                        hasMore = false
+                    } else {
+                        val mapped = dtos.map {
+                            QuestionMetadata(
+                                id = it.id,
+                                subject = it.subject ?: "",
+                                topic = it.topic ?: "",
+                                subTopic = it.subTopic ?: "",
+                                difficulty = it.difficulty ?: "",
+                                questionType = it.questionType ?: "",
+                                examName = it.examName ?: "",
+                                examYear = it.examYear?.toString() ?: "",
+                                tags = it.tags ?: emptyList()
+                            )
+                        }
+                        allMetadata.addAll(mapped)
+
+                        if (dtos.size < limit) {
+                            hasMore = false
+                        } else {
+                            offset += limit
+                        }
+                    }
+                } else {
+                    throw Exception("Failed to fetch metadata. Server responded with: ${response.status}")
+                }
             }
+            allMetadata
         } catch (e: ClientRequestException) {
-            // Log in debug if necessary
             throw Exception("Failed to fetch metadata due to client request issue.")
         } catch (e: ServerResponseException) {
-            // Log in debug if necessary
             throw Exception("Failed to fetch metadata due to server response issue.")
         } catch (e: Exception) {
-            // Log in debug if necessary
             throw Exception("Unable to load quiz metadata. Please retry.")
         }
     }

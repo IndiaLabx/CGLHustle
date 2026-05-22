@@ -19,11 +19,11 @@ data class QuizConfigUiState(
     val filterOptions: QuizFilterOptions? = null,
     val error: String? = null,
 
-    // Primary Filters (Single Select for Phase 1 compatibility, can be multi later)
-    val selectedSubject: String = "",
-    val selectedTopic: String = "",
-    val selectedSubTopic: String = "",
-    val selectedDifficulty: String = "",
+    // Primary Filters (Now True Multi-Select)
+    val selectedSubjects: Set<String> = emptySet(),
+    val selectedTopics: Set<String> = emptySet(),
+    val selectedSubTopics: Set<String> = emptySet(),
+    val selectedDifficulties: Set<String> = emptySet(),
 
     // Advanced Filters (Multi-Select)
     val selectedExamNames: Set<String> = emptySet(),
@@ -34,6 +34,9 @@ data class QuizConfigUiState(
     // Expansion & Bottom Sheet State
     val isAdvancedFiltersExpanded: Boolean = false,
     val activeBottomSheet: FilterType? = null,
+
+    // Dynamic Filter Counts Map: Category -> Value -> Count
+    val dynamicCounts: Map<FilterType, Map<String, Int>> = emptyMap(),
 
     // Mode & Settings
     val selectedMode: QuizMode = QuizMode.LEARNING,

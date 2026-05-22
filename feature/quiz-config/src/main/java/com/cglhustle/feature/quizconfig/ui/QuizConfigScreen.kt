@@ -86,14 +86,13 @@ fun QuizConfigScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Phase 3: Premium Animated Background
         AnimatedBackground(
             mode = uiState.selectedMode,
             scrollState = scrollState
         )
 
         Scaffold(
-            containerColor = Color.Transparent, // Let background show through
+            containerColor = Color.Transparent,
             topBar = {
                 QuizConfigTopBar(
                     availableQuestionCount = uiState.availableQuestionCount,
@@ -127,7 +126,6 @@ fun QuizConfigScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (uiState.isLoadingFilters) {
-                    // Phase 3: Premium Skeleton Loader
                     ShimmerSkeleton(
                         modifier = Modifier
                             .fillMaxSize()
@@ -173,9 +171,12 @@ fun QuizConfigScreen(
                                     subjects = options.subjects,
                                     topics = options.topics,
                                     subTopics = options.subTopics,
-                                    selectedSubject = uiState.selectedSubject,
-                                    selectedTopic = uiState.selectedTopic,
-                                    selectedSubTopic = uiState.selectedSubTopic,
+                                    selectedSubjects = uiState.selectedSubjects,
+                                    selectedTopics = uiState.selectedTopics,
+                                    selectedSubTopics = uiState.selectedSubTopics,
+                                    subjectCounts = uiState.dynamicCounts[FilterType.SUBJECT] ?: emptyMap(),
+                                    topicCounts = uiState.dynamicCounts[FilterType.TOPIC] ?: emptyMap(),
+                                    subTopicCounts = uiState.dynamicCounts[FilterType.SUB_TOPIC] ?: emptyMap(),
                                     onSubjectSelected = viewModel::selectSubject,
                                     onTopicSelected = viewModel::selectTopic,
                                     onSubTopicSelected = viewModel::selectSubTopic
@@ -185,7 +186,8 @@ fun QuizConfigScreen(
                             item {
                                 DifficultySelector(
                                     difficulties = options.difficulties,
-                                    selectedDifficulty = uiState.selectedDifficulty,
+                                    selectedDifficulties = uiState.selectedDifficulties,
+                                    difficultyCounts = uiState.dynamicCounts[FilterType.DIFFICULTY] ?: emptyMap(),
                                     onDifficultySelected = viewModel::selectDifficulty
                                 )
                             }

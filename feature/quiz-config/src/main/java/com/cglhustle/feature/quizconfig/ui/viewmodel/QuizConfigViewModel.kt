@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 
@@ -31,7 +32,6 @@ class QuizConfigViewModel @Inject constructor(
 
     private var allMetadata: List<QuestionMetadata> = emptyList()
 
-    // Inverted Index Structure
     // Category -> Value -> Set of Question IDs
     private var invertedIndex: Map<FilterType, Map<String, Set<String>>> = emptyMap()
 
@@ -48,7 +48,6 @@ class QuizConfigViewModel @Inject constructor(
                 allMetadata = metadataRepository.fetchMetadata()
                 buildInvertedIndex(allMetadata)
 
-                // Extract filter options dynamically from metadata
                 val subjects = allMetadata.map { it.subject }.filter { it.isNotEmpty() }.distinct().sorted()
                 val topics = allMetadata.map { it.topic }.filter { it.isNotEmpty() }.distinct().sorted()
                 val subTopics = allMetadata.map { it.subTopic }.filter { it.isNotEmpty() }.distinct().sorted()
@@ -57,9 +56,6 @@ class QuizConfigViewModel @Inject constructor(
                 val examYears = allMetadata.map { it.examYear }.filter { it.isNotEmpty() }.distinct().sorted()
                 val tags = allMetadata.flatMap { it.tags }.filter { it.isNotEmpty() }.distinct().sorted()
 
-                // Shifts aren't in metadata yet, but preserving structure for future if needed
-                val shifts = emptyList<String>()
-
                 val options = QuizFilterOptions(
                     subjects = subjects,
                     topics = topics,
@@ -67,7 +63,7 @@ class QuizConfigViewModel @Inject constructor(
                     difficulties = difficulties,
                     examNames = examNames,
                     examYears = examYears,
-                    shifts = shifts,
+                    shifts = emptyList(),
                     tags = tags
                 )
 
@@ -92,8 +88,6 @@ class QuizConfigViewModel @Inject constructor(
 
     private suspend fun buildInvertedIndex(metadata: List<QuestionMetadata>) = withContext(Dispatchers.Default) {
         val index = mutableMapOf<FilterType, MutableMap<String, MutableSet<String>>>()
-
-        // Initialize maps
         FilterType.entries.forEach { index[it] = mutableMapOf() }
 
         metadata.forEach { q ->
@@ -103,32 +97,26 @@ class QuizConfigViewModel @Inject constructor(
             if (q.difficulty.isNotEmpty()) index[FilterType.DIFFICULTY]!!.getOrPut(q.difficulty) { mutableSetOf() }.add(q.id)
             if (q.examName.isNotEmpty()) index[FilterType.EXAM_NAME]!!.getOrPut(q.examName) { mutableSetOf() }.add(q.id)
             if (q.examYear.isNotEmpty()) index[FilterType.EXAM_YEAR]!!.getOrPut(q.examYear) { mutableSetOf() }.add(q.id)
-
             q.tags.forEach { tag ->
                 if (tag.isNotEmpty()) index[FilterType.TAGS]!!.getOrPut(tag) { mutableSetOf() }.add(q.id)
             }
         }
-
         invertedIndex = index
     }
 
-    private fun updateFilteredCounts() {
+    private fun getIntersectionExcluding(excludedType: FilterType?): Set<String> {
         val state = _uiState.value
-
         var currentSet: Set<String>? = null
 
         fun intersectWith(type: FilterType, values: Set<String>) {
-            if (values.isEmpty()) return
-
+            if (type == excludedType || values.isEmpty()) return
             val typeMap = invertedIndex[type] ?: return
 
-            // Union of selected values within the SAME category (e.g., ExamName A OR ExamName B)
             val valuesUnion = mutableSetOf<String>()
             values.forEach { v ->
                 typeMap[v]?.let { valuesUnion.addAll(it) }
             }
 
-            // Intersect with global set (Category 1 AND Category 2)
             currentSet = if (currentSet == null) {
                 valuesUnion
             } else {
@@ -136,105 +124,114 @@ class QuizConfigViewModel @Inject constructor(
             }
         }
 
-        if (state.selectedSubject.isNotEmpty()) intersectWith(FilterType.SUBJECT, setOf(state.selectedSubject))
-        if (state.selectedTopic.isNotEmpty()) intersectWith(FilterType.TOPIC, setOf(state.selectedTopic))
-        if (state.selectedSubTopic.isNotEmpty()) intersectWith(FilterType.SUB_TOPIC, setOf(state.selectedSubTopic))
-        if (state.selectedDifficulty.isNotEmpty()) intersectWith(FilterType.DIFFICULTY, setOf(state.selectedDifficulty))
-
+        intersectWith(FilterType.SUBJECT, state.selectedSubjects)
+        intersectWith(FilterType.TOPIC, state.selectedTopics)
+        intersectWith(FilterType.SUB_TOPIC, state.selectedSubTopics)
+        intersectWith(FilterType.DIFFICULTY, state.selectedDifficulties)
         intersectWith(FilterType.EXAM_NAME, state.selectedExamNames)
         intersectWith(FilterType.EXAM_YEAR, state.selectedYears)
         intersectWith(FilterType.SHIFT, state.selectedShifts)
         intersectWith(FilterType.TAGS, state.selectedTags)
 
-        currentFilteredIds = currentSet ?: allMetadata.map { it.id }.toSet()
-
-        _uiState.update { it.copy(availableQuestionCount = currentFilteredIds.size) }
+        return currentSet ?: allMetadata.map { it.id }.toSet()
     }
 
+    private fun updateFilteredCounts() {
+        val globalIds = getIntersectionExcluding(null)
+        currentFilteredIds = globalIds
+
+        val dynamicCounts = mutableMapOf<FilterType, Map<String, Int>>()
+
+        // Calculate dynamic counts for EACH filter category independently
+        FilterType.entries.forEach { type ->
+            val setExcludingCurrentType = getIntersectionExcluding(type)
+            val countsForType = mutableMapOf<String, Int>()
+
+            invertedIndex[type]?.forEach { (value, ids) ->
+                // How many items match if we add THIS value to ALL OTHER selected filters?
+                countsForType[value] = setExcludingCurrentType.intersect(ids).size
+            }
+            dynamicCounts[type] = countsForType
+        }
+
+        _uiState.update {
+            it.copy(
+                availableQuestionCount = currentFilteredIds.size,
+                dynamicCounts = dynamicCounts
+            )
+        }
+
+        verifyDependencies()
+    }
+
+    private fun verifyDependencies() {
+        val state = _uiState.value
+
+        // Find valid options based on dynamic counts (anything > 0 is valid)
+        val validTopics = state.dynamicCounts[FilterType.TOPIC]?.filterValues { it > 0 }?.keys ?: emptySet()
+        val validSubTopics = state.dynamicCounts[FilterType.SUB_TOPIC]?.filterValues { it > 0 }?.keys ?: emptySet()
+
+        val newTopics = state.selectedTopics.intersect(validTopics)
+        val newSubTopics = state.selectedSubTopics.intersect(validSubTopics)
+
+        if (newTopics != state.selectedTopics || newSubTopics != state.selectedSubTopics) {
+            _uiState.update {
+                it.copy(
+                    selectedTopics = newTopics,
+                    selectedSubTopics = newSubTopics
+                )
+            }
+            // Need to recurse lightly to ensure counts are updated post-pruning
+            // We use a separate minimal pass so we don't endless loop
+            val globalIds = getIntersectionExcluding(null)
+            currentFilteredIds = globalIds
+            _uiState.update { it.copy(availableQuestionCount = currentFilteredIds.size) }
+        }
+    }
 
     // --- Intent Handlers ---
 
+    private fun toggleSet(current: Set<String>, value: String): Set<String> {
+        return if (current.contains(value)) current - value else current + value
+    }
+
     fun selectSubject(subject: String) {
-        _uiState.update {
-            it.copy(
-                selectedSubject = subject,
-                selectedTopic = "", // Reset dependent
-                selectedSubTopic = ""
-            )
-        }
+        _uiState.update { it.copy(selectedSubjects = toggleSet(it.selectedSubjects, subject)) }
         updateFilteredCounts()
     }
 
     fun selectTopic(topic: String) {
-        _uiState.update {
-            it.copy(
-                selectedTopic = topic,
-                selectedSubTopic = "" // Reset dependent
-            )
-        }
+        _uiState.update { it.copy(selectedTopics = toggleSet(it.selectedTopics, topic)) }
         updateFilteredCounts()
     }
 
     fun selectSubTopic(subTopic: String) {
-        _uiState.update {
-            it.copy(
-                selectedSubTopic = subTopic
-            )
-        }
+        _uiState.update { it.copy(selectedSubTopics = toggleSet(it.selectedSubTopics, subTopic)) }
         updateFilteredCounts()
     }
 
     fun selectDifficulty(difficulty: String) {
-        _uiState.update { it.copy(selectedDifficulty = difficulty) }
+        _uiState.update { it.copy(selectedDifficulties = toggleSet(it.selectedDifficulties, difficulty)) }
         updateFilteredCounts()
     }
 
-    // Advanced Multi-Select Filters
     fun toggleExamName(name: String) {
-        _uiState.update { state ->
-            val newSet = if (state.selectedExamNames.contains(name)) {
-                state.selectedExamNames - name
-            } else {
-                state.selectedExamNames + name
-            }
-            state.copy(selectedExamNames = newSet)
-        }
+        _uiState.update { it.copy(selectedExamNames = toggleSet(it.selectedExamNames, name)) }
         updateFilteredCounts()
     }
 
     fun toggleYear(year: String) {
-        _uiState.update { state ->
-            val newSet = if (state.selectedYears.contains(year)) {
-                state.selectedYears - year
-            } else {
-                state.selectedYears + year
-            }
-            state.copy(selectedYears = newSet)
-        }
+        _uiState.update { it.copy(selectedYears = toggleSet(it.selectedYears, year)) }
         updateFilteredCounts()
     }
 
     fun toggleShift(shift: String) {
-        _uiState.update { state ->
-            val newSet = if (state.selectedShifts.contains(shift)) {
-                state.selectedShifts - shift
-            } else {
-                state.selectedShifts + shift
-            }
-            state.copy(selectedShifts = newSet)
-        }
+        _uiState.update { it.copy(selectedShifts = toggleSet(it.selectedShifts, shift)) }
         updateFilteredCounts()
     }
 
     fun toggleTag(tag: String) {
-        _uiState.update { state ->
-            val newSet = if (state.selectedTags.contains(tag)) {
-                state.selectedTags - tag
-            } else {
-                state.selectedTags + tag
-            }
-            state.copy(selectedTags = newSet)
-        }
+        _uiState.update { it.copy(selectedTags = toggleSet(it.selectedTags, tag)) }
         updateFilteredCounts()
     }
 
@@ -256,8 +253,6 @@ class QuizConfigViewModel @Inject constructor(
         _uiState.update { it.copy(activeBottomSheet = null) }
     }
 
-    // --- Others ---
-
     fun selectMode(mode: QuizMode) {
         _uiState.update { it.copy(selectedMode = mode) }
     }
@@ -267,21 +262,16 @@ class QuizConfigViewModel @Inject constructor(
     }
 
     fun applyQuickStart(count: Int, mode: QuizMode? = null) {
-        _uiState.update { state ->
-            state.copy(
-                questionCount = count,
-                selectedMode = mode ?: state.selectedMode
-            )
-        }
+        _uiState.update { it.copy(questionCount = count, selectedMode = mode ?: it.selectedMode) }
     }
 
     fun resetFilters() {
         _uiState.update { state ->
             state.copy(
-                selectedSubject = "",
-                selectedTopic = "",
-                selectedSubTopic = "",
-                selectedDifficulty = "",
+                selectedSubjects = emptySet(),
+                selectedTopics = emptySet(),
+                selectedSubTopics = emptySet(),
+                selectedDifficulties = emptySet(),
                 selectedExamNames = emptySet(),
                 selectedYears = emptySet(),
                 selectedShifts = emptySet(),
@@ -306,7 +296,6 @@ class QuizConfigViewModel @Inject constructor(
         updateFilteredCounts()
     }
 
-    // --- Session Creation ---
     fun startSession() {
         if (currentFilteredIds.isEmpty()) return
 
@@ -318,12 +307,11 @@ class QuizConfigViewModel @Inject constructor(
                 val quizName = state.quizName.ifEmpty { "Custom Quiz" }
                 val mode = state.selectedMode.name.lowercase()
 
-                // Create a JSON string of active filters for history/resuming purposes
                 val filtersJson = JSONObject().apply {
-                    if (state.selectedSubject.isNotEmpty()) put("subject", state.selectedSubject)
-                    if (state.selectedTopic.isNotEmpty()) put("topic", state.selectedTopic)
-                    if (state.selectedSubTopic.isNotEmpty()) put("subTopic", state.selectedSubTopic)
-                    if (state.selectedDifficulty.isNotEmpty()) put("difficulty", state.selectedDifficulty)
+                    if (state.selectedSubjects.isNotEmpty()) put("subjects", JSONArray(state.selectedSubjects))
+                    if (state.selectedTopics.isNotEmpty()) put("topics", JSONArray(state.selectedTopics))
+                    if (state.selectedSubTopics.isNotEmpty()) put("subTopics", JSONArray(state.selectedSubTopics))
+                    if (state.selectedDifficulties.isNotEmpty()) put("difficulties", JSONArray(state.selectedDifficulties))
                 }.toString()
 
                 val quizId = quizRepository.createQuiz(
