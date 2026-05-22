@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DifficultySelector(
     difficulties: List<String>,
-    selectedDifficulty: String,
+    selectedDifficulties: Set<String>,
+    difficultyCounts: Map<String, Int>,
     onDifficultySelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -28,6 +29,18 @@ fun DifficultySelector(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
+
+        val validDifficulties = difficulties.filter { (difficultyCounts[it] ?: 0) > 0 || selectedDifficulties.contains(it) }
+
+        if (validDifficulties.isEmpty()) {
+            Text(
+                text = "No options available",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+            return
+        }
+
         GlassSurface(
             shape = RoundedCornerShape(12.dp),
             backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
@@ -37,13 +50,11 @@ fun DifficultySelector(
                 modifier = Modifier.padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Ensure default difficulties exist for proper color mapping, otherwise fallback
-                val displayDifficulties = if (difficulties.isEmpty()) listOf("Easy", "Medium", "Hard") else difficulties
-
-                displayDifficulties.forEach { diff ->
+                validDifficulties.forEach { diff ->
                     DifficultySegment(
                         title = diff,
-                        isSelected = selectedDifficulty == diff,
+                        count = difficultyCounts[diff] ?: 0,
+                        isSelected = selectedDifficulties.contains(diff),
                         onClick = { onDifficultySelected(diff) },
                         modifier = Modifier.weight(1f)
                     )
@@ -56,6 +67,7 @@ fun DifficultySelector(
 @Composable
 private fun DifficultySegment(
     title: String,
+    count: Int,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -79,7 +91,7 @@ private fun DifficultySegment(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = title,
+            text = "$title ($count)",
             style = MaterialTheme.typography.labelLarge,
             color = contentColor,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal

@@ -14,9 +14,12 @@ fun ClassificationSection(
     subjects: List<String>,
     topics: List<String>,
     subTopics: List<String>,
-    selectedSubject: String,
-    selectedTopic: String,
-    selectedSubTopic: String,
+    selectedSubjects: Set<String>,
+    selectedTopics: Set<String>,
+    selectedSubTopics: Set<String>,
+    subjectCounts: Map<String, Int>,
+    topicCounts: Map<String, Int>,
+    subTopicCounts: Map<String, Int>,
     onSubjectSelected: (String) -> Unit,
     onTopicSelected: (String) -> Unit,
     onSubTopicSelected: (String) -> Unit,
@@ -29,27 +32,28 @@ fun ClassificationSection(
         ClassificationRow(
             title = "Subject",
             items = subjects,
-            selectedItem = selectedSubject,
+            selectedItems = selectedSubjects,
+            itemCounts = subjectCounts,
             onItemSelected = onSubjectSelected,
             enabled = true
         )
 
-        val topicsEnabled = selectedSubject.isNotEmpty()
         ClassificationRow(
             title = "Topic",
             items = topics,
-            selectedItem = selectedTopic,
+            selectedItems = selectedTopics,
+            itemCounts = topicCounts,
             onItemSelected = onTopicSelected,
-            enabled = topicsEnabled
+            enabled = selectedSubjects.isNotEmpty()
         )
 
-        val subTopicsEnabled = selectedTopic.isNotEmpty()
         ClassificationRow(
             title = "Sub-Topic",
             items = subTopics,
-            selectedItem = selectedSubTopic,
+            selectedItems = selectedSubTopics,
+            itemCounts = subTopicCounts,
             onItemSelected = onSubTopicSelected,
-            enabled = subTopicsEnabled
+            enabled = selectedTopics.isNotEmpty()
         )
     }
 }
@@ -58,10 +62,14 @@ fun ClassificationSection(
 private fun ClassificationRow(
     title: String,
     items: List<String>,
-    selectedItem: String,
+    selectedItems: Set<String>,
+    itemCounts: Map<String, Int>,
     onItemSelected: (String) -> Unit,
     enabled: Boolean
 ) {
+    // Only show items that have > 0 results available if we were to click them
+    val validItems = items.filter { (itemCounts[it] ?: 0) > 0 || selectedItems.contains(it) }
+
     Column {
         Text(
             text = title,
@@ -70,7 +78,7 @@ private fun ClassificationRow(
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        if (items.isEmpty() && enabled) {
+        if (validItems.isEmpty() && enabled) {
             Text(
                 text = "No options available",
                 style = MaterialTheme.typography.bodyMedium,
@@ -80,15 +88,15 @@ private fun ClassificationRow(
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(items) { item ->
-                    // Apply glass style through colors mapping where appropriate, using standard FilterChip for semantics
+                items(validItems) { item ->
+                    val count = itemCounts[item] ?: 0
                     FilterChip(
-                        selected = item == selectedItem,
+                        selected = selectedItems.contains(item),
                         onClick = { if (enabled) onItemSelected(item) },
-                        label = { Text(item) },
-                        enabled = enabled,
+                        label = { Text("$item ($count)") },
+                        enabled = enabled && count > 0,
                         colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), // Glass-like off state
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
