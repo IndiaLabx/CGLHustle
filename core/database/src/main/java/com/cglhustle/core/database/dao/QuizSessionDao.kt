@@ -30,4 +30,7 @@ abstract class QuizSessionDao {
 
     @Query("UPDATE quiz_sessions SET status = :status, lastMutationId = :lastMutationId, updatedAt = :updatedAt, totalPausedDurationMs = :totalPausedDurationMs, lastPausedTime = :lastPausedTime WHERE sessionId = :sessionId")
     abstract suspend fun updateSessionPauseState(sessionId: String, status: String, lastMutationId: String, updatedAt: Long, totalPausedDurationMs: Long, lastPausedTime: Long?)
+
+    @Query("UPDATE quiz_sessions SET sessionVersion = sessionVersion + 1, lastMutationId = :lastMutationId, updatedAt = :updatedAt WHERE sessionId = :sessionId")
+    abstract suspend fun updateSessionVersion(sessionId: String, lastMutationId: String, updatedAt: Long)
 }

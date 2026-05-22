@@ -5,6 +5,7 @@ import com.cglhustle.core.common.error.AppResult
 import com.cglhustle.core.common.error.Failure
 import com.cglhustle.core.common.error.Success
 import com.cglhustle.core.database.entity.SyncEventEntity
+import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.UserAnswerDto
 import com.cglhustle.core.network.error.toAppError
 import io.ktor.client.HttpClient
@@ -30,6 +31,18 @@ class SyncNetworkDataSourceImpl @Inject constructor(
                 setBody(payload)
             }
 
+            Success(Unit)
+        } catch (e: Exception) {
+            Failure(e.toAppError())
+        }
+    }
+
+    override suspend fun submitAnswer(request: AnswerMutationRequest): AppResult<Unit, AppError> {
+        return try {
+            httpClient.post("/rest/v1/rpc/upsert_user_answer_safe") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
             Success(Unit)
         } catch (e: Exception) {
             Failure(e.toAppError())

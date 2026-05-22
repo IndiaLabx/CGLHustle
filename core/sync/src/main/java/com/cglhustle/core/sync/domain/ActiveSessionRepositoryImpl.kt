@@ -1,5 +1,6 @@
 package com.cglhustle.core.sync.domain
 
+import com.cglhustle.core.common.error.Success
 import com.cglhustle.core.database.dao.QuestionSnapshotDao
 import com.cglhustle.core.database.dao.QuizSessionDao
 import com.cglhustle.core.database.dao.SyncEventDao
@@ -10,6 +11,7 @@ import com.cglhustle.core.database.entity.SyncEventEntity
 import com.cglhustle.core.database.entity.SyncEventType
 import com.cglhustle.core.database.entity.SyncStatus
 import com.cglhustle.core.database.entity.UserAnswerEntity
+import com.cglhustle.core.network.SyncNetworkDataSource
 import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.feature.activesession.domain.ActiveSessionData
 import com.cglhustle.feature.activesession.domain.ActiveSessionRepository
@@ -18,10 +20,6 @@ import com.cglhustle.feature.activesession.domain.PendingMutation
 import com.cglhustle.feature.activesession.domain.Question
 import com.cglhustle.feature.activesession.domain.SessionStatus
 import com.cglhustle.core.sync.orchestrator.SyncOrchestrator
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -31,68 +29,39 @@ class ActiveSessionRepositoryImpl @Inject constructor(
     private val quizSessionDao: QuizSessionDao,
     private val userAnswerDao: UserAnswerDao,
     private val syncEventDao: SyncEventDao,
+    private val syncNetworkDataSource: SyncNetworkDataSource,
     private val syncOrchestrator: SyncOrchestrator
 ) : ActiveSessionRepository {
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-    override fun observeSessionData(userId: String, sessionId: String): Flow<ActiveSessionData?> {
-        val sessionFlow = quizSessionDao.observeSessionById(sessionId).filterNotNull()
-        val answersFlow = userAnswerDao.observeAllAnswersForSession(sessionId)
-        val syncEventsFlow = syncEventDao.observeAllSyncEvents(userId)
+    override suspend fun getInitialSessionData(userId: String, sessionId: String): ActiveSessionData? {
+        val sessionEntity = quizSessionDao.getSessionById(sessionId) ?: return null
+        val answers = userAnswerDao.getAllAnswersForSession(sessionId)
 
-        return combine(sessionFlow, answersFlow, syncEventsFlow) { sessionEntity, answers, syncEvents ->
+        // In a full implementation, we'd fetch from Server here first.
+        // For now, we hydrate from Room as the lightweight cache fallback.
 
-            // Map Answers
-            val selectedAnswers = answers
-                .filter { it.mutationType == AnswerMutationType.SELECT && it.selectedOption != null }
-                .associate { it.questionId to it.selectedOption!! }
+        val selectedAnswers = answers
+            .filter { it.mutationType == AnswerMutationType.SELECT && it.selectedOption != null }
+            .associate { it.questionId to it.selectedOption!! }
 
-            // Pending Mutations
-            val pendingMutations = mutableMapOf<String, PendingMutation>()
-
-            val pendingSyncEvents = syncEvents.filter {
-                it.status == SyncStatus.PENDING || it.status == SyncStatus.IN_FLIGHT || it.status == SyncStatus.FAILED_RETRY
-            }
-
-            for (event in pendingSyncEvents) {
-                if (event.eventType == SyncEventType.UPSERT_ANSWER) {
-                    try {
-                        val payload = json.decodeFromString<AnswerMutationRequest>(event.payload)
-                        if (payload.sessionId == sessionId) {
-                            val matchingAnswer = answers.find { it.eventId == payload.eventId }
-                            if (matchingAnswer != null && matchingAnswer.selectedOption != null) {
-                                pendingMutations[payload.questionId] = PendingMutation(
-                                    questionId = payload.questionId,
-                                    selectedOptionId = matchingAnswer.selectedOption!!,
-                                    eventId = payload.eventId
-                                )
-                            }
-                        }
-                    } catch (e: Exception) {
-                        // Ignore parse errors on old schema events
-                    }
-                }
-            }
-
-            // Status mapping
-            val status = when (sessionEntity.status) {
-                DbSessionStatus.NOT_STARTED, DbSessionStatus.IN_PROGRESS -> SessionStatus.ACTIVE
-                DbSessionStatus.PAUSED -> SessionStatus.PAUSED
-                DbSessionStatus.SUBMITTED_LOCAL -> SessionStatus.SUBMITTING
-                DbSessionStatus.SYNCED_FINAL -> SessionStatus.COMPLETED
-                DbSessionStatus.TERMINATED_CONFLICT, DbSessionStatus.ABANDONED -> SessionStatus.COMPLETED
-            }
-
-            ActiveSessionData(
-                sessionId = sessionId,
-                questions = emptyList(), // Hydrated later in ViewModel to avoid redundant fetching
-                currentQuestionIndex = 0, // Handled in ViewModel
-                selectedAnswers = selectedAnswers,
-                pendingMutations = pendingMutations,
-                status = status
-            )
+        val status = when (sessionEntity.status) {
+            DbSessionStatus.NOT_STARTED, DbSessionStatus.IN_PROGRESS -> SessionStatus.ACTIVE
+            DbSessionStatus.PAUSED -> SessionStatus.PAUSED
+            DbSessionStatus.SUBMITTED_LOCAL -> SessionStatus.SUBMITTING
+            DbSessionStatus.SYNCED_FINAL -> SessionStatus.COMPLETED
+            DbSessionStatus.TERMINATED_CONFLICT, DbSessionStatus.ABANDONED -> SessionStatus.COMPLETED
         }
+
+        return ActiveSessionData(
+            sessionId = sessionId,
+            questions = emptyList(), // Hydrated later in ViewModel
+            currentQuestionIndex = 0, // Handled in ViewModel
+            selectedAnswers = selectedAnswers,
+            pendingMutations = emptyMap(), // Pending mutations should be managed in-memory
+            status = status
+        )
     }
 
     override suspend fun getQuestions(sessionId: String): List<Question> {
@@ -123,23 +92,6 @@ class ActiveSessionRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         val timestamp = System.currentTimeMillis()
 
-        val answer = UserAnswerEntity(
-            eventId = eventId,
-            supersedesEventId = null,
-            mutationType = AnswerMutationType.SELECT,
-            sessionId = sessionId,
-            userId = userId,
-            questionId = questionId,
-            selectedOption = selectedOptionId,
-            isCorrect = null, // Backend evaluated
-            timeTakenSeconds = null,
-            attemptSequence = attemptSequence,
-            idempotencyKey = idempotencyKey,
-            clientGeneratedAt = timestamp,
-            serverReceivedAt = null,
-            updatedAt = timestamp
-        )
-
         val request = AnswerMutationRequest(
             userId = userId,
             sessionId = sessionId,
@@ -149,21 +101,52 @@ class ActiveSessionRepositoryImpl @Inject constructor(
             idempotencyKey = idempotencyKey
         )
 
-        val syncEvent = SyncEventEntity(
+        // 1. Direct Network Call FIRST
+        val networkResult = syncNetworkDataSource.submitAnswer(request)
+
+        // 2. Room is just a lightweight cache
+        val answer = UserAnswerEntity(
+            eventId = eventId,
+            supersedesEventId = null,
+            mutationType = AnswerMutationType.SELECT,
+            sessionId = sessionId,
             userId = userId,
+            questionId = questionId,
+            selectedOption = selectedOptionId,
+            isCorrect = null,
+            timeTakenSeconds = null,
+            attemptSequence = attemptSequence,
             idempotencyKey = idempotencyKey,
-            eventType = SyncEventType.UPSERT_ANSWER,
-            payload = json.encodeToString(request),
-            status = SyncStatus.PENDING,
-            createdAt = timestamp,
-            nextRetryAt = null,
-            retryCount = 0,
-            lastErrorCode = null,
-            lastErrorAt = null
+            clientGeneratedAt = timestamp,
+            serverReceivedAt = if (networkResult is Success) timestamp else null,
+            updatedAt = timestamp
         )
 
-        userAnswerDao.saveAnswerWithOutbox(answer, syncEvent, timestamp)
-        syncOrchestrator.enqueueSync()
+        // We use a simple insert, removing the forced outbox transaction logic
+        userAnswerDao.insertAnswer(answer)
+        quizSessionDao.updateSessionVersion(sessionId, eventId, timestamp)
+
+        // 3. Fallback Retry Mechanism
+        if (networkResult !is Success) {
+            val syncEvent = SyncEventEntity(
+                userId = userId,
+                idempotencyKey = idempotencyKey,
+                eventType = SyncEventType.UPSERT_ANSWER,
+                payload = json.encodeToString(request),
+                status = SyncStatus.PENDING,
+                createdAt = timestamp,
+                nextRetryAt = null,
+                retryCount = 0,
+                lastErrorCode = null,
+                lastErrorAt = null
+            )
+            val exists = syncEventDao.checkEventExists(userId, idempotencyKey)
+            if (exists == 0) {
+                syncEventDao.insertEvent(syncEvent)
+                syncOrchestrator.enqueueSync()
+            }
+        }
+
         return Result.success(Unit)
     }
 
@@ -202,8 +185,6 @@ class ActiveSessionRepositoryImpl @Inject constructor(
             updatedAt = timestamp
         )
 
-        // Ensure a SYNC EVENT is added to submit session to server.
-        // We will mock idempotency key and user ID for now since they aren't provided here, but they should be in the DB.
         val session = quizSessionDao.getSessionById(sessionId)
         if (session != null) {
             val event = SyncEventEntity(
@@ -218,11 +199,10 @@ class ActiveSessionRepositoryImpl @Inject constructor(
                 lastErrorCode = null,
                 lastErrorAt = null
             )
-            // Just insert into sync event directly because it's local submission
             syncEventDao.insertEvent(event)
+            syncOrchestrator.enqueueSync()
         }
 
-        syncOrchestrator.enqueueSync()
         return Result.success(true)
     }
 }
