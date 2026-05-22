@@ -41,9 +41,19 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
+
+    // Internal Core modules
     implementation(project(":core:common"))
-    implementation(libs.kotlinx.serialization.json)
     implementation(project(":core:ui"))
+    implementation(project(":core:network"))
+    implementation(project(":core:config"))
+
+    // Serialization & Ktor (needed for API calls via HttpClient)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
     // Hilt
     implementation(libs.hilt.android)

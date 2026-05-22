@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -27,25 +28,17 @@ fun AnimatedBackground(
     scrollState: LazyListState,
     modifier: Modifier = Modifier
 ) {
-    val (primaryColor, secondaryColor, backgroundColor) = when (mode) {
-        QuizMode.LEARNING -> Triple(
-            Color(0xFF00BCD4), // Cyan
-            Color(0xFF2196F3), // Blue
-            Color(0xFF0B1320)  // Deep Navy
-        )
-        QuizMode.MOCK -> Triple(
-            Color(0xFFFFC107), // Amber
-            Color(0xFFFF5722), // Deep Orange
-            Color(0xFF1A1208)  // Warm Dark
-        )
-        QuizMode.GOD_MODE -> Triple(
-            Color(0xFF9C27B0), // Purple
-            Color(0xFFE91E63), // Crimson/Magenta
-            Color(0xFF120518)  // Dark Purple Base
-        )
+    val themeBg = MaterialTheme.colorScheme.background
+    val themePrimary = MaterialTheme.colorScheme.primary
+    val themeSecondary = MaterialTheme.colorScheme.secondary
+    val themeTertiary = MaterialTheme.colorScheme.tertiary
+
+    val (primaryColor, secondaryColor) = when (mode) {
+        QuizMode.LEARNING -> Pair(themePrimary, themeSecondary)
+        QuizMode.MOCK -> Pair(themeSecondary, themeTertiary)
+        QuizMode.GOD_MODE -> Pair(themeTertiary, themePrimary)
     }
 
-    val animatedBg by animateColorAsState(targetValue = backgroundColor, animationSpec = tween(500), label = "bg")
     val animatedPrimary by animateColorAsState(targetValue = primaryColor, animationSpec = tween(500), label = "primary")
     val animatedSecondary by animateColorAsState(targetValue = secondaryColor, animationSpec = tween(500), label = "secondary")
 
@@ -62,11 +55,7 @@ fun AnimatedBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(animatedBg, Color.Black)
-                )
-            )
+            .background(themeBg)
     ) {
         // Floating Orb 1 (Top Right)
         Box(

@@ -7,6 +7,7 @@ enum class FilterType {
     SUBJECT,
     TOPIC,
     SUB_TOPIC,
+    DIFFICULTY,
     EXAM_NAME,
     EXAM_YEAR,
     SHIFT,
