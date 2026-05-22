@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -40,9 +38,6 @@ class ActiveSessionViewModel @Inject constructor(
     private var currentSessionId: String = ""
     private var userId: String = "mock_user_id" // Mock user id
 
-    private var currentQuestions: List<com.cglhustle.feature.activesession.domain.Question> = emptyList()
-    private var observeJob: Job? = null
-
     fun initialize(sessionId: String?) {
         if (initialized) return
         initialized = true
@@ -52,36 +47,22 @@ class ActiveSessionViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {
-                currentQuestions = repository.getQuestions(currentSessionId)
+                // 1. Fetch Questions
+                val questions = repository.getQuestions(currentSessionId)
 
-                observeJob?.cancel()
-                observeJob = launch {
-                    repository.observeSessionData(userId, currentSessionId).collectLatest { data ->
-                        if (data != null) {
-                            val currentIdx = (_uiState.value as? UiState.Success)?.data?.currentQuestionIndex ?: 0
-                            val prevStatus = (_uiState.value as? UiState.Success)?.data?.status
+                // 2. Hydrate session data
+                val initialData = repository.getInitialSessionData(userId, currentSessionId)
 
-                            _uiState.value = UiState.Success(
-                                data.copy(
-                                    questions = currentQuestions,
-                                    currentQuestionIndex = currentIdx
-                                )
-                            )
-
-                            // Fire completion event once it goes to COMPLETED
-                            if (prevStatus == SessionStatus.SUBMITTING && data.status == SessionStatus.COMPLETED) {
-                                _events.emit(ActiveSessionEvent.SessionCompleted(currentSessionId))
-                            } else if (data.status == SessionStatus.COMPLETED && prevStatus != SessionStatus.COMPLETED) {
-                                _events.emit(ActiveSessionEvent.SessionCompleted(currentSessionId))
-                            }
-                        } else {
-                            // Empty state, or not started. For now we will keep it simple.
-                             _uiState.value = UiState.Success(
-                                ActiveSessionData(sessionId = currentSessionId, questions = currentQuestions)
-                            )
-                        }
-                    }
+                if (initialData != null) {
+                    _uiState.value = UiState.Success(
+                        initialData.copy(questions = questions)
+                    )
+                } else {
+                    _uiState.value = UiState.Success(
+                        ActiveSessionData(sessionId = currentSessionId, questions = questions)
+                    )
                 }
+
             } catch (e: Exception) {
                 _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to load session: ${e.message}"))
             }
@@ -98,6 +79,21 @@ class ActiveSessionViewModel @Inject constructor(
         val idempotencyKey = UUID.randomUUID().toString()
         val attemptSequence = 1 // Simplified for this sprint
 
+        // 1. Optimistic In-Memory State Update
+        val newSelectedAnswers = currentData.selectedAnswers.toMutableMap()
+        newSelectedAnswers[questionId] = optionId
+
+        val newPendingMutations = currentData.pendingMutations.toMutableMap()
+        newPendingMutations[questionId] = PendingMutation(questionId, optionId, eventId)
+
+        _uiState.value = UiState.Success(
+            currentData.copy(
+                selectedAnswers = newSelectedAnswers,
+                pendingMutations = newPendingMutations
+            )
+        )
+
+        // 2. Fire and forget repository execution (direct network + fallback)
         viewModelScope.launch {
             try {
                 repository.submitAnswer(
@@ -109,8 +105,35 @@ class ActiveSessionViewModel @Inject constructor(
                     selectedOptionId = optionId,
                     attemptSequence = attemptSequence
                 )
+
+                // 3. Clear pending mutation on success (or let the background process handle it, but for UI, we can clear the spinner)
+                _uiState.update { state ->
+                    if (state is UiState.Success) {
+                        val currentPending = state.data.pendingMutations.toMutableMap()
+                        if (currentPending[questionId]?.eventId == eventId) {
+                            currentPending.remove(questionId)
+                            UiState.Success(state.data.copy(pendingMutations = currentPending))
+                        } else {
+                            state
+                        }
+                    } else state
+                }
+
             } catch (e: Exception) {
-                _events.emit(ActiveSessionEvent.ShowSnackbar("Error saving answer locally."))
+                _events.emit(ActiveSessionEvent.ShowSnackbar("Answer submission error. Retrying in background."))
+
+                // Even on error, we clear the loading spinner because the retry engine will take over
+                _uiState.update { state ->
+                    if (state is UiState.Success) {
+                        val currentPending = state.data.pendingMutations.toMutableMap()
+                        if (currentPending[questionId]?.eventId == eventId) {
+                            currentPending.remove(questionId)
+                            UiState.Success(state.data.copy(pendingMutations = currentPending))
+                        } else {
+                            state
+                        }
+                    } else state
+                }
             }
         }
     }
@@ -127,15 +150,26 @@ class ActiveSessionViewModel @Inject constructor(
     }
 
     fun togglePause() {
-        val currentState = _uiState.value
-        if (currentState is UiState.Success) {
-            viewModelScope.launch {
-                val isPaused = currentState.data.status == SessionStatus.PAUSED
+        val currentState = _uiState.value as? UiState.Success ?: return
+        val currentData = currentState.data
+
+        val isPaused = currentData.status == SessionStatus.PAUSED
+        val newStatus = if (isPaused) SessionStatus.ACTIVE else SessionStatus.PAUSED
+
+        // Optimistic
+        _uiState.value = UiState.Success(currentData.copy(status = newStatus))
+
+        viewModelScope.launch {
+            try {
                 if (isPaused) {
                     repository.resumeSession(currentSessionId)
                 } else {
                     repository.pauseSession(currentSessionId)
                 }
+            } catch (e: Exception) {
+                // Revert optimistic on failure
+                _uiState.value = UiState.Success(currentData.copy(status = currentData.status))
+                _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to update pause state."))
             }
         }
     }
@@ -144,11 +178,18 @@ class ActiveSessionViewModel @Inject constructor(
         val currentState = _uiState.value as? UiState.Success ?: return
         val currentData = currentState.data
 
+        // Optimistic
+        _uiState.value = UiState.Success(currentData.copy(status = SessionStatus.SUBMITTING))
+
         viewModelScope.launch {
             try {
                 repository.submitSession(currentData.sessionId)
+                _uiState.value = UiState.Success(currentData.copy(status = SessionStatus.COMPLETED))
+                _events.emit(ActiveSessionEvent.SessionCompleted(currentSessionId))
             } catch (e: Exception) {
-                _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to submit session locally."))
+                // Revert optimistic
+                _uiState.value = UiState.Success(currentData.copy(status = currentData.status))
+                _events.emit(ActiveSessionEvent.ShowSnackbar("Failed to submit session."))
             }
         }
     }

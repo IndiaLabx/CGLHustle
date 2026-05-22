@@ -7,7 +7,6 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkManager
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
-import androidx.work.CoroutineWorker
 import com.cglhustle.core.database.CglHustleDatabase
 import com.cglhustle.core.database.dao.QuizSessionDao
 import com.cglhustle.core.database.dao.SyncEventDao
@@ -135,7 +134,8 @@ class EndToEndSyncEngineTest {
             nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
         )
 
-        userAnswerDao.saveAnswerWithOutbox(answer, syncEvent, System.currentTimeMillis())
+        userAnswerDao.insertAnswer(answer)
+        syncEventDao.insertEvent(syncEvent)
 
         val pendingEvents = syncEventDao.getPendingEvents()
         assertEquals(1, pendingEvents.size)
@@ -151,13 +151,13 @@ class EndToEndSyncEngineTest {
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters
-                ): ListenableWorker {
+                ): androidx.work.ListenableWorker {
                     return OutboxSyncWorker(appContext, workerParameters, syncEventDao, syncNetworkDataSource, syncOrchestrator, mock(com.cglhustle.core.common.logging.StructuredLogger::class.java))
                 }
             })
             .build()
 
-        val result = (worker as CoroutineWorker).doWork()
+        val result = (worker as androidx.work.CoroutineWorker).doWork()
 
         // Step E: Assert the entire chain
         assertEquals(ListenableWorker.Result.success(), result)
@@ -206,7 +206,9 @@ class EndToEndSyncEngineTest {
             nextRetryAt = null, retryCount = 0, lastErrorCode = null, lastErrorAt = null
         )
 
-        userAnswerDao.saveAnswerWithOutbox(answer, syncEvent, System.currentTimeMillis())
+        userAnswerDao.insertAnswer(answer)
+        syncEventDao.insertEvent(syncEvent)
+
         val pendingEvents = syncEventDao.getPendingEvents()
         val insertedEventId = pendingEvents[0].id
 
@@ -220,13 +222,13 @@ class EndToEndSyncEngineTest {
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters
-                ): ListenableWorker {
+                ): androidx.work.ListenableWorker {
                     return OutboxSyncWorker(appContext, workerParameters, syncEventDao, syncNetworkDataSource, syncOrchestrator, mock(com.cglhustle.core.common.logging.StructuredLogger::class.java))
                 }
             })
             .build()
 
-        val result = (worker as CoroutineWorker).doWork()
+        val result = (worker as androidx.work.CoroutineWorker).doWork()
 
         // Worker translates it to retry
         assertEquals(ListenableWorker.Result.retry(), result)
