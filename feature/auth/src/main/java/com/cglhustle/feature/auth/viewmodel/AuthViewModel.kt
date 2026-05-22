@@ -73,7 +73,7 @@ class AuthViewModel @Inject constructor(
     fun signInWithGuest() {
         _uiState.update { it.copy(isGuestLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            authRepository.signInWithEmail("mindflow@user.com", "Test@1234").fold(
+            authRepository.signInWithEmail("cglhustle@user.com", "Test@%£8167").fold(
                 onSuccess = {
                     _uiState.update { it.copy(isGuestLoading = false) }
                 },
