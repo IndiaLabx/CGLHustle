@@ -1,5 +1,6 @@
 package com.cglhustle.core.network
 
+import com.cglhustle.core.config.PrimaryBackendHttpClient
 import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.ServerAckResponseDto
 import com.cglhustle.core.network.dto.QuizSessionStateDto
@@ -19,7 +20,7 @@ import io.ktor.http.contentType
 import javax.inject.Inject
 
 class CglHustleApi @Inject constructor(
-    private val httpClient: HttpClient
+    @PrimaryBackendHttpClient private val httpClient: HttpClient
 ) {
     suspend fun getQuizSessionState(sessionId: String): QuizSessionStateDto {
         return httpClient.get("/rest/v1/quiz_sessions?session_id=eq.$sessionId").body<List<QuizSessionStateDto>>().first()

@@ -15,6 +15,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "CGL Hustle"
 include(":app")
+include(":core:config")
 include(":core:network")
 include(":core:database")
 include(":core:common")

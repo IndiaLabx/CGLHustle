@@ -1,6 +1,8 @@
 package com.cglhustle.core.network.di
 
-import com.cglhustle.core.network.BuildConfig
+import com.cglhustle.core.config.BackendConfig
+import com.cglhustle.core.config.PrimaryBackend
+import com.cglhustle.core.config.QuestionBackend
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,12 +19,26 @@ object SupabaseModule {
 
     @Provides
     @Singleton
-    fun provideSupabaseClient(): SupabaseClient {
+    @PrimaryBackend
+    fun providePrimarySupabaseClient(): SupabaseClient {
         return createSupabaseClient(
-            supabaseUrl = BuildConfig.SUPABASE_URL,
-            supabaseKey = BuildConfig.SUPABASE_ANON_KEY
+            supabaseUrl = BackendConfig.primaryBackendUrl,
+            supabaseKey = BackendConfig.primaryAnonKey
         ) {
             install(Auth)
+            install(Postgrest)
+        }
+    }
+
+    @Provides
+    @Singleton
+    @QuestionBackend
+    fun provideQuestionSupabaseClient(): SupabaseClient {
+        return createSupabaseClient(
+            supabaseUrl = BackendConfig.questionBackendUrl,
+            supabaseKey = BackendConfig.questionAnonKey
+        ) {
+            // ONLY postgrest is allowed for reading. No Auth!
             install(Postgrest)
         }
     }

@@ -4,6 +4,7 @@ import com.cglhustle.core.common.error.AppError
 import com.cglhustle.core.common.error.AppResult
 import com.cglhustle.core.common.error.Failure
 import com.cglhustle.core.common.error.Success
+import com.cglhustle.core.config.PrimaryBackendHttpClient
 import com.cglhustle.core.database.entity.SyncEventEntity
 import com.cglhustle.core.network.dto.AnswerMutationRequest
 import com.cglhustle.core.network.dto.UserAnswerDto
@@ -17,7 +18,7 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 class SyncNetworkDataSourceImpl @Inject constructor(
-    private val httpClient: HttpClient
+    @PrimaryBackendHttpClient private val httpClient: HttpClient
 ) : SyncNetworkDataSource {
 
     private val json = Json { ignoreUnknownKeys = true }
