@@ -85,7 +85,7 @@ fun QuizConfigScreen(
         }
     }
 
-    Box(modifier = Modifier.padding(bottom = 140.dp).fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AnimatedBackground(
             mode = uiState.selectedMode,
             scrollState = scrollState
@@ -102,7 +102,7 @@ fun QuizConfigScreen(
             bottomBar = {
                 if (!uiState.isLoadingFilters && uiState.error == null) {
                     Column(
-                        modifier = Modifier.padding(bottom = 140.dp).fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         if (uiState.availableQuestionCount == 0) {
                             EmptyStateWarning()
@@ -120,14 +120,14 @@ fun QuizConfigScreen(
             }
         ) { paddingValues ->
             Box(
-                modifier = Modifier.padding(bottom = 140.dp)
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 if (uiState.isLoadingFilters) {
                     ShimmerSkeleton(
-                        modifier = Modifier.padding(bottom = 140.dp)
+                        modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp)
                     )
@@ -148,7 +148,7 @@ fun QuizConfigScreen(
                     uiState.filterOptions?.let { options ->
                         LazyColumn(
                             state = scrollState,
-                            modifier = Modifier.padding(bottom = 140.dp)
+                            modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -221,7 +221,7 @@ fun QuizConfigScreen(
 
                             // Bottom padding for the sticky bottom bar & empty warning
                             item {
-                                Spacer(modifier = Modifier.padding(bottom = 140.dp).height(140.dp))
+                                Spacer(modifier = Modifier.height(140.dp))
                             }
                         }
                     }
