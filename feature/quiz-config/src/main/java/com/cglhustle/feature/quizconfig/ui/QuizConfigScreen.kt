@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cglhustle.feature.quizconfig.ui.components.*
 import com.cglhustle.engine.facetedsearch.FilterCategory
@@ -129,7 +130,7 @@ fun QuizConfigScreen(
                     ShimmerSkeleton(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .padding(AppSpacing.ScreenPadding)
                     )
                 } else if (uiState.error != null) {
                     Column(
@@ -150,8 +151,8 @@ fun QuizConfigScreen(
                             state = scrollState,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                                .padding(horizontal = AppSpacing.ScreenPadding, vertical = AppSpacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(AppSpacing.SectionSpacing)
                         ) {
                             item {
                                 ModeSwitcher(

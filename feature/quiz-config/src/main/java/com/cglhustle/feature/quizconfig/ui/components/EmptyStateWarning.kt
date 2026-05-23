@@ -11,39 +11,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
+import com.cglhustle.core.ui.theme.QuizColors
 
 @Composable
 fun EmptyStateWarning(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Color(0xFFFFF8E1).copy(alpha = 0.2f), // Soft amber glow feel
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f), // Using Material error/warning semantics
         shape = MaterialTheme.shapes.medium,
         modifier = modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = "Warning",
-                tint = Color(0xFFFFA000) // Amber
+                tint = MaterialTheme.colorScheme.error
             )
             Column {
                 Text(
                     text = "No questions match current filters",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
                     text = "Try clearing some advanced filters to broaden the search.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                 )
             }
         }

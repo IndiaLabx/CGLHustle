@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 import com.cglhustle.feature.quizconfig.domain.model.QuizMode
 
 @Composable
@@ -19,7 +19,7 @@ fun QuickStartButtons(
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
         item {
             QuickStartChip("Quick 10") { onQuickStart(10, null) }
@@ -43,10 +43,15 @@ private fun QuickStartChip(
 ) {
     AssistChip(
         onClick = onClick,
-        label = { Text(label) },
+        label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+        shape = MaterialTheme.shapes.small,
         colors = AssistChipDefaults.assistChipColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-            labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        border = AssistChipDefaults.assistChipBorder(
+            borderColor = MaterialTheme.colorScheme.outlineVariant,
+            enabled = true
         )
     )
 }

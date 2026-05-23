@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 
 @Composable
 fun StickyCreateQuizBar(
@@ -20,17 +21,17 @@ fun StickyCreateQuizBar(
     isCreating: Boolean
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 2.dp,
+        shadowElevation = 0.dp, // Use tonal instead of harsh shadows
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(AppSpacing.CardPadding)
                 .windowInsetsPadding(WindowInsets.navigationBars),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
             OutlinedTextField(
                 value = quizName,
@@ -43,13 +44,14 @@ fun StickyCreateQuizBar(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.lg),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
                     onClick = onReset,
                     modifier = Modifier.weight(0.3f),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reset Filters")
                 }
@@ -58,7 +60,8 @@ fun StickyCreateQuizBar(
                     onClick = onCreateQuiz,
                     enabled = availableQuestionCount > 0 && !isCreating,
                     modifier = Modifier.weight(0.7f),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    contentPadding = PaddingValues(vertical = AppSpacing.md),
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     if (isCreating) {
                         CircularProgressIndicator(
@@ -71,7 +74,7 @@ fun StickyCreateQuizBar(
                             text = "Create Quiz ($availableQuestionCount)",
                             style = MaterialTheme.typography.titleMedium
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(AppSpacing.sm))
                         Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
                     }
                 }

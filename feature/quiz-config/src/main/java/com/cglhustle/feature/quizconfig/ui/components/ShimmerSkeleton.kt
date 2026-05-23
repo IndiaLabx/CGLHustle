@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 
 @Composable
 fun ShimmerSkeleton(
@@ -27,12 +28,11 @@ fun ShimmerSkeleton(
 
     val transition = rememberInfiniteTransition(label = "shimmer")
 
-    // Smooth, very fast shimmer moving linearly for a "fast/snappy" app perception
     val translateAnim = transition.animateFloat(
         initialValue = -500f,
         targetValue = 2000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = LinearEasing),
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmer_translation"
@@ -46,52 +46,64 @@ fun ShimmerSkeleton(
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.xl)
     ) {
         // Mode Switcher Skeleton
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(MaterialTheme.shapes.large)
                 .background(brush)
         )
 
         // Quick Start Chips Skeleton
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             repeat(4) {
                 Box(
                     modifier = Modifier
                         .height(32.dp)
                         .width(80.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(MaterialTheme.shapes.small)
                         .background(brush)
                 )
             }
         }
 
-        // Classification Rows Skeleton
-        repeat(3) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .height(24.dp)
-                        .width(100.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(brush)
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(3) { widthMulti ->
-                        Box(
-                            modifier = Modifier
-                                .height(32.dp)
-                                .width((80 + (widthMulti * 20)).dp) // Staggered widths
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(brush)
-                        )
-                    }
-                }
-            }
-        }
+        // Active Filters Skeleton (Optional, small)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(brush)
+        )
+
+        // Classification Card Skeleton
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp) // Approximate height of the classification card
+                .clip(MaterialTheme.shapes.medium)
+                .background(brush)
+        )
+
+        // Difficulty Card Skeleton
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(brush)
+        )
+
+        // Advanced Filters Skeleton
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(brush)
+        )
     }
 }

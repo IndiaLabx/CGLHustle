@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 import com.cglhustle.engine.facetedsearch.FilterCategory
 
 @Composable
@@ -40,7 +41,7 @@ fun AdvancedFiltersSection(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
@@ -50,7 +51,7 @@ fun AdvancedFiltersSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onToggleExpand)
-                    .padding(16.dp),
+                    .padding(AppSpacing.lg),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -70,8 +71,8 @@ fun AdvancedFiltersSection(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(start = AppSpacing.lg, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.lg)
                 ) {
                     FilterActionRow(
                         title = "Exam Names",
@@ -115,7 +116,7 @@ private fun FilterActionRow(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -125,7 +126,7 @@ private fun FilterActionRow(
             Text(text = title, style = MaterialTheme.typography.labelLarge)
             TextButton(
                 onClick = onAddClick,
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                contentPadding = PaddingValues(horizontal = AppSpacing.sm, vertical = 0.dp),
                 modifier = Modifier.height(32.dp)
             ) {
                 Text("Select")
@@ -136,8 +137,8 @@ private fun FilterActionRow(
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
             ) {
                 selectedItems.forEach { item ->
                     RemovableChip(
