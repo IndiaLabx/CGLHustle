@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cglhustle.feature.quizconfig.ui.components.*
-import com.cglhustle.feature.quizconfig.ui.state.FilterType
+import com.cglhustle.engine.facetedsearch.FilterCategory
 import com.cglhustle.feature.quizconfig.ui.viewmodel.QuizConfigViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +35,7 @@ fun QuizConfigScreen(
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         when (uiState.activeBottomSheet) {
-            FilterType.EXAM_NAME -> {
+            FilterCategory.EXAM_NAME -> {
                 MultiSelectBottomSheet(
                     title = "Select Exam Names",
                     options = uiState.filterOptions!!.examNames,
@@ -46,7 +46,7 @@ fun QuizConfigScreen(
                     sheetState = sheetState
                 )
             }
-            FilterType.EXAM_YEAR -> {
+            FilterCategory.EXAM_YEAR -> {
                 MultiSelectBottomSheet(
                     title = "Select Exam Years",
                     options = uiState.filterOptions!!.examYears,
@@ -57,7 +57,7 @@ fun QuizConfigScreen(
                     sheetState = sheetState
                 )
             }
-            FilterType.SHIFT -> {
+            FilterCategory.SHIFT -> {
                 MultiSelectBottomSheet(
                     title = "Select Shifts",
                     options = uiState.filterOptions!!.shifts,
@@ -68,7 +68,7 @@ fun QuizConfigScreen(
                     sheetState = sheetState
                 )
             }
-            FilterType.TAGS -> {
+            FilterCategory.TAGS -> {
                 MultiSelectBottomSheet(
                     title = "Select Tags",
                     options = uiState.filterOptions!!.tags,
@@ -168,15 +168,9 @@ fun QuizConfigScreen(
 
                             item {
                                 ClassificationSection(
-                                    subjects = options.subjects,
-                                    topics = options.topics,
-                                    subTopics = options.subTopics,
-                                    selectedSubjects = uiState.selectedSubjects,
-                                    selectedTopics = uiState.selectedTopics,
-                                    selectedSubTopics = uiState.selectedSubTopics,
-                                    subjectCounts = uiState.dynamicCounts[FilterType.SUBJECT] ?: emptyMap(),
-                                    topicCounts = uiState.dynamicCounts[FilterType.TOPIC] ?: emptyMap(),
-                                    subTopicCounts = uiState.dynamicCounts[FilterType.SUB_TOPIC] ?: emptyMap(),
+                                    subjectsState = uiState.subjectsState,
+                                    topicsState = uiState.topicsState,
+                                    subTopicsState = uiState.subTopicsState,
                                     onSubjectSelected = viewModel::selectSubject,
                                     onTopicSelected = viewModel::selectTopic,
                                     onSubTopicSelected = viewModel::selectSubTopic,
@@ -187,9 +181,7 @@ fun QuizConfigScreen(
 
                             item {
                                 DifficultySelector(
-                                    difficulties = options.difficulties,
-                                    selectedDifficulties = uiState.selectedDifficulties,
-                                    difficultyCounts = uiState.dynamicCounts[FilterType.DIFFICULTY] ?: emptyMap(),
+                                    difficultiesState = uiState.difficultiesState,
                                     onDifficultySelected = viewModel::selectDifficulty
                                 )
                             }
