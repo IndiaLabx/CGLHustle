@@ -23,7 +23,7 @@ fun AppNavGraph(
     ) {
         composable("auth") {
             AuthRoute(
-                onBack = {
+                onNavigateBack = {
                     navController.popBackStack()
                 }
             )
