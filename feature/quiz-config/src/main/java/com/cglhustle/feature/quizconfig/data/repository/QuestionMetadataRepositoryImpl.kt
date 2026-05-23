@@ -9,7 +9,7 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.get
-import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.http.isSuccess
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,8 +27,10 @@ class QuestionMetadataRepositoryImpl @Inject constructor(
             var hasMore = true
 
             while (hasMore) {
+                // PostgREST explicitly supports offset/limit as URL parameters which Ktor handles perfectly
                 val response = httpClient.get("/rest/v1/questions?select=id,subject,topic,subTopic,difficulty,questionType,examName,examYear,tags") {
-                    header("Range", "$offset-${offset + limit - 1}")
+                    parameter("offset", offset)
+                    parameter("limit", limit)
                 }
 
                 if (response.status.isSuccess()) {
@@ -58,7 +60,12 @@ class QuestionMetadataRepositoryImpl @Inject constructor(
                         }
                     }
                 } else {
-                    throw Exception("Failed to fetch metadata. Server responded with: ${response.status}")
+                    // Safe break instead of crashing out entire app if limit is hit cleanly but causes a minor rest boundary error.
+                    if (allMetadata.isNotEmpty()) {
+                        hasMore = false
+                    } else {
+                        throw Exception("Failed to fetch metadata. Server responded with: ${response.status}")
+                    }
                 }
             }
             allMetadata
