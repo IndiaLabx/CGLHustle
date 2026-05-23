@@ -74,21 +74,44 @@ class QuizConfigViewModel @Inject constructor(
     private fun updateUiStateFromResult(query: FilterQuery, result: QueryResult) {
         val options = baseOptions ?: return
 
-        Log.d("QuizSearchEngine", "[UI_STATE_EMIT] Emitting UI state for query result Reset")
+        val mappingStart = SystemClock.elapsedRealtime()
+
+        Log.d("QuizSearchEngine", "[DEBUG_UI] ---- STATE MAPPING START ----")
+        Log.d("QuizSearchEngine", "[DEBUG_UI] facetCounts keys: ${result.facetCounts.keys}")
+        Log.d("QuizSearchEngine", "[DEBUG_UI] visibleValues keys: ${result.visibleValues.keys}")
+        Log.d("QuizSearchEngine", "[DEBUG_UI] totalMatches: ${result.totalMatches}")
+
+        val subjectsState = buildChipState(FilterCategory.SUBJECT, options.subjects, query, result)
+        val topicsState = buildChipState(FilterCategory.TOPIC, options.topics, query, result)
+        val subTopicsState = buildChipState(FilterCategory.SUB_TOPIC, options.subTopics, query, result)
+        val difficultiesState = buildChipState(FilterCategory.DIFFICULTY, options.difficulties, query, result)
+
+        val examNamesState = buildChipState(FilterCategory.EXAM_NAME, options.examNames, query, result)
+        val yearsState = buildChipState(FilterCategory.EXAM_YEAR, options.examYears, query, result)
+        val shiftsState = buildChipState(FilterCategory.SHIFT, options.shifts, query, result)
+        val tagsState = buildChipState(FilterCategory.TAGS, options.tags, query, result)
+
+        Log.d("QuizSearchEngine", "[DEBUG_UI] subjectsState size: ${subjectsState.size}, visible: ${subjectsState.count { it.isVisible }}")
+        Log.d("QuizSearchEngine", "[DEBUG_UI] topicsState size: ${topicsState.size}, visible: ${topicsState.count { it.isVisible }}")
+        Log.d("QuizSearchEngine", "[DEBUG_UI] subTopicsState size: ${subTopicsState.size}, visible: ${subTopicsState.count { it.isVisible }}")
+        Log.d("QuizSearchEngine", "[DEBUG_UI] difficultyState size: ${difficultiesState.size}, visible: ${difficultiesState.count { it.isVisible }}")
+
+        Log.d("QuizSearchEngine", "[DEBUG_UI] [UI_STATE_EMIT] Emitting UI state for query result Reset")
+
+        val mappingDuration = SystemClock.elapsedRealtime() - mappingStart
+        Log.d("QuizSearchEngine", "[DEBUG_UI] UI Mapping took ${mappingDuration}ms")
+
         _uiState.update { state ->
             state.copy(
                 availableQuestionCount = result.totalMatches,
-                subjectsState = buildChipState(FilterCategory.SUBJECT, options.subjects, query, result),
-                topicsState = buildChipState(FilterCategory.TOPIC, options.topics, query, result),
-                subTopicsState = buildChipState(FilterCategory.SUB_TOPIC, options.subTopics, query, result),
-                difficultiesState = buildChipState(FilterCategory.DIFFICULTY, options.difficulties, query, result),
-
-                // Advanced Filters (Still keeping legacy Sets for bottom sheets, but we update the immutable list for rendering)
-                examNamesState = buildChipState(FilterCategory.EXAM_NAME, options.examNames, query, result),
-                yearsState = buildChipState(FilterCategory.EXAM_YEAR, options.examYears, query, result),
-                shiftsState = buildChipState(FilterCategory.SHIFT, options.shifts, query, result),
-                tagsState = buildChipState(FilterCategory.TAGS, options.tags, query, result),
-
+                subjectsState = subjectsState,
+                topicsState = topicsState,
+                subTopicsState = subTopicsState,
+                difficultiesState = difficultiesState,
+                examNamesState = examNamesState,
+                yearsState = yearsState,
+                shiftsState = shiftsState,
+                tagsState = tagsState,
                 selectedExamNames = query.selections[FilterCategory.EXAM_NAME] ?: emptySet(),
                 selectedYears = query.selections[FilterCategory.EXAM_YEAR] ?: emptySet(),
                 selectedShifts = query.selections[FilterCategory.SHIFT] ?: emptySet(),
@@ -114,11 +137,7 @@ class QuizConfigViewModel @Inject constructor(
                 isSelected = selections.contains(option),
                 // If visibleValues is null, it means the rule allows everything (or engine doesn't hide it)
                 // BUT we need to hide things with count 0 unless they are selected
-                isVisible = if (visibleValues != null) {
-                    visibleValues.contains(option)
-                } else {
-                    (counts[option] ?: 0) > 0 || selections.contains(option)
-                }
+                isVisible = true // [DEBUG] Forced true for UI pipeline testing
             )
         }.toImmutableList()
     }
@@ -126,7 +145,9 @@ class QuizConfigViewModel @Inject constructor(
     fun loadMetadata() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingFilters = true, error = null) }
-            try {
+                val metadataStart = SystemClock.elapsedRealtime()
+                Log.d("QuizSearchEngine", "[DEBUG_TIMING] Starting metadata fetch")
+                try {
                 // Network Fetch
                 Log.d("QuizSearchEngine", "[METADATA_FETCH] Starting network fetch")
                 val fetchStart = SystemClock.elapsedRealtime()

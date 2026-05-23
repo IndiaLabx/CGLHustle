@@ -19,9 +19,14 @@ class QuizSearchEngine {
     private val isIndexed = AtomicBoolean(false)
 
     // Query-local scratchpads (avoid instantiation during query execution)
-    private val universeScratch = BitSet()
-    private val categoryScratch = BitSet()
-    private val tempCountScratch = BitSet()
+    private val _universeScratch = object : ThreadLocal<BitSet>() { override fun initialValue() = BitSet() }
+    private val universeScratch: BitSet get() = _universeScratch.get()!!
+
+    private val _categoryScratch = object : ThreadLocal<BitSet>() { override fun initialValue() = BitSet() }
+    private val categoryScratch: BitSet get() = _categoryScratch.get()!!
+
+    private val _tempCountScratch = object : ThreadLocal<BitSet>() { override fun initialValue() = BitSet() }
+    private val tempCountScratch: BitSet get() = _tempCountScratch.get()!!
 
     // Universe (All bits 1 up to totalDocuments)
     private val fullUniverse = BitSet()
