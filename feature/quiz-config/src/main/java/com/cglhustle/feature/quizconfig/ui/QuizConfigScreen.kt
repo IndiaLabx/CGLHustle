@@ -179,7 +179,9 @@ fun QuizConfigScreen(
                                     subTopicCounts = uiState.dynamicCounts[FilterType.SUB_TOPIC] ?: emptyMap(),
                                     onSubjectSelected = viewModel::selectSubject,
                                     onTopicSelected = viewModel::selectTopic,
-                                    onSubTopicSelected = viewModel::selectSubTopic
+                                    onSubTopicSelected = viewModel::selectSubTopic,
+                                    onSelectAll = viewModel::selectAll,
+                                    onClearAll = viewModel::clearAll
                                 )
                             }
 

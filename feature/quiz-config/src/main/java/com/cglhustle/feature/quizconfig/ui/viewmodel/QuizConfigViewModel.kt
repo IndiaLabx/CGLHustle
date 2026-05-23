@@ -45,29 +45,11 @@ class QuizConfigViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingFilters = true, error = null) }
             try {
+                // Fetch could take time, already suspended in repo
                 allMetadata = metadataRepository.fetchMetadata()
-                buildInvertedIndex(allMetadata)
 
-                val subjects = allMetadata.map { it.subject }.filter { it.isNotEmpty() }.distinct().sorted()
-                val topics = allMetadata.map { it.topic }.filter { it.isNotEmpty() }.distinct().sorted()
-                val subTopics = allMetadata.map { it.subTopic }.filter { it.isNotEmpty() }.distinct().sorted()
-                val difficulties = allMetadata.map { it.difficulty }.filter { it.isNotEmpty() }.distinct().sorted()
-                val examNames = allMetadata.map { it.examName }.filter { it.isNotEmpty() }.distinct().sorted()
-                val examYears = allMetadata.map { it.examYear }.filter { it.isNotEmpty() }.distinct().sorted()
-                val tags = allMetadata.flatMap { it.tags }.filter { it.isNotEmpty() }.distinct().sorted()
-
-                val options = QuizFilterOptions(
-                    subjects = subjects,
-                    topics = topics,
-                    subTopics = subTopics,
-                    difficulties = difficulties,
-                    examNames = examNames,
-                    examYears = examYears,
-                    shifts = emptyList(),
-                    tags = tags
-                )
-
-                updateFilteredCounts()
+                // Fire and wait for heavy background task
+                val options = buildInvertedIndexAndOptions(allMetadata)
 
                 _uiState.update {
                     it.copy(
@@ -75,6 +57,10 @@ class QuizConfigViewModel @Inject constructor(
                         filterOptions = options
                     )
                 }
+
+                // Initial count update
+                updateFilteredCounts()
+
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -86,26 +72,65 @@ class QuizConfigViewModel @Inject constructor(
         }
     }
 
-    private suspend fun buildInvertedIndex(metadata: List<QuestionMetadata>) = withContext(Dispatchers.Default) {
+    private suspend fun buildInvertedIndexAndOptions(metadata: List<QuestionMetadata>): QuizFilterOptions = withContext(Dispatchers.Default) {
         val index = mutableMapOf<FilterType, MutableMap<String, MutableSet<String>>>()
         FilterType.entries.forEach { index[it] = mutableMapOf() }
 
+        val subjectsSet = mutableSetOf<String>()
+        val topicsSet = mutableSetOf<String>()
+        val subTopicsSet = mutableSetOf<String>()
+        val difficultiesSet = mutableSetOf<String>()
+        val examNamesSet = mutableSetOf<String>()
+        val examYearsSet = mutableSetOf<String>()
+        val tagsSet = mutableSetOf<String>()
+
         metadata.forEach { q ->
-            if (q.subject.isNotEmpty()) index[FilterType.SUBJECT]!!.getOrPut(q.subject) { mutableSetOf() }.add(q.id)
-            if (q.topic.isNotEmpty()) index[FilterType.TOPIC]!!.getOrPut(q.topic) { mutableSetOf() }.add(q.id)
-            if (q.subTopic.isNotEmpty()) index[FilterType.SUB_TOPIC]!!.getOrPut(q.subTopic) { mutableSetOf() }.add(q.id)
-            if (q.difficulty.isNotEmpty()) index[FilterType.DIFFICULTY]!!.getOrPut(q.difficulty) { mutableSetOf() }.add(q.id)
-            if (q.examName.isNotEmpty()) index[FilterType.EXAM_NAME]!!.getOrPut(q.examName) { mutableSetOf() }.add(q.id)
-            if (q.examYear.isNotEmpty()) index[FilterType.EXAM_YEAR]!!.getOrPut(q.examYear) { mutableSetOf() }.add(q.id)
+            if (q.subject.isNotEmpty()) {
+                index[FilterType.SUBJECT]!!.getOrPut(q.subject) { mutableSetOf() }.add(q.id)
+                subjectsSet.add(q.subject)
+            }
+            if (q.topic.isNotEmpty()) {
+                index[FilterType.TOPIC]!!.getOrPut(q.topic) { mutableSetOf() }.add(q.id)
+                topicsSet.add(q.topic)
+            }
+            if (q.subTopic.isNotEmpty()) {
+                index[FilterType.SUB_TOPIC]!!.getOrPut(q.subTopic) { mutableSetOf() }.add(q.id)
+                subTopicsSet.add(q.subTopic)
+            }
+            if (q.difficulty.isNotEmpty()) {
+                index[FilterType.DIFFICULTY]!!.getOrPut(q.difficulty) { mutableSetOf() }.add(q.id)
+                difficultiesSet.add(q.difficulty)
+            }
+            if (q.examName.isNotEmpty()) {
+                index[FilterType.EXAM_NAME]!!.getOrPut(q.examName) { mutableSetOf() }.add(q.id)
+                examNamesSet.add(q.examName)
+            }
+            if (q.examYear.isNotEmpty()) {
+                index[FilterType.EXAM_YEAR]!!.getOrPut(q.examYear) { mutableSetOf() }.add(q.id)
+                examYearsSet.add(q.examYear)
+            }
             q.tags.forEach { tag ->
-                if (tag.isNotEmpty()) index[FilterType.TAGS]!!.getOrPut(tag) { mutableSetOf() }.add(q.id)
+                if (tag.isNotEmpty()) {
+                    index[FilterType.TAGS]!!.getOrPut(tag) { mutableSetOf() }.add(q.id)
+                    tagsSet.add(tag)
+                }
             }
         }
         invertedIndex = index
+
+        QuizFilterOptions(
+            subjects = subjectsSet.sorted(),
+            topics = topicsSet.sorted(),
+            subTopics = subTopicsSet.sorted(),
+            difficulties = difficultiesSet.sorted(),
+            examNames = examNamesSet.sorted(),
+            examYears = examYearsSet.sorted(),
+            shifts = emptyList(),
+            tags = tagsSet.sorted()
+        )
     }
 
-    private fun getIntersectionExcluding(excludedType: FilterType?): Set<String> {
-        val state = _uiState.value
+    private fun getIntersectionExcluding(excludedType: FilterType?, state: QuizConfigUiState): Set<String> {
         var currentSet: Set<String>? = null
 
         fun intersectWith(type: FilterType, values: Set<String>) {
@@ -137,55 +162,60 @@ class QuizConfigViewModel @Inject constructor(
     }
 
     private fun updateFilteredCounts() {
-        val globalIds = getIntersectionExcluding(null)
-        currentFilteredIds = globalIds
+        val currentState = _uiState.value
+        viewModelScope.launch(Dispatchers.Default) {
+            val globalIds = getIntersectionExcluding(null, currentState)
 
-        val dynamicCounts = mutableMapOf<FilterType, Map<String, Int>>()
+            val dynamicCounts = mutableMapOf<FilterType, Map<String, Int>>()
 
-        // Calculate dynamic counts for EACH filter category independently
-        FilterType.entries.forEach { type ->
-            val setExcludingCurrentType = getIntersectionExcluding(type)
-            val countsForType = mutableMapOf<String, Int>()
+            // Calculate dynamic counts for EACH filter category independently
+            FilterType.entries.forEach { type ->
+                val setExcludingCurrentType = getIntersectionExcluding(type, currentState)
+                val countsForType = mutableMapOf<String, Int>()
 
-            invertedIndex[type]?.forEach { (value, ids) ->
-                // How many items match if we add THIS value to ALL OTHER selected filters?
-                countsForType[value] = setExcludingCurrentType.intersect(ids).size
+                invertedIndex[type]?.forEach { (value, ids) ->
+                    // How many items match if we add THIS value to ALL OTHER selected filters?
+                    countsForType[value] = setExcludingCurrentType.intersect(ids).size
+                }
+                dynamicCounts[type] = countsForType
             }
-            dynamicCounts[type] = countsForType
-        }
 
-        _uiState.update {
-            it.copy(
-                availableQuestionCount = currentFilteredIds.size,
-                dynamicCounts = dynamicCounts
-            )
+            // Fire main thread update
+            withContext(Dispatchers.Main) {
+                currentFilteredIds = globalIds
+                _uiState.update {
+                    it.copy(
+                        availableQuestionCount = currentFilteredIds.size,
+                        dynamicCounts = dynamicCounts
+                    )
+                }
+                verifyDependencies()
+            }
         }
-
-        verifyDependencies()
     }
 
     private fun verifyDependencies() {
         val state = _uiState.value
 
-        // Find valid options based on dynamic counts (anything > 0 is valid)
-        val validTopics = state.dynamicCounts[FilterType.TOPIC]?.filterValues { it > 0 }?.keys ?: emptySet()
-        val validSubTopics = state.dynamicCounts[FilterType.SUB_TOPIC]?.filterValues { it > 0 }?.keys ?: emptySet()
+        // Only run dependency cull on Default dispatcher if large
+        viewModelScope.launch(Dispatchers.Default) {
+            val validTopics = state.dynamicCounts[FilterType.TOPIC]?.filterValues { it > 0 }?.keys ?: emptySet()
+            val validSubTopics = state.dynamicCounts[FilterType.SUB_TOPIC]?.filterValues { it > 0 }?.keys ?: emptySet()
 
-        val newTopics = state.selectedTopics.intersect(validTopics)
-        val newSubTopics = state.selectedSubTopics.intersect(validSubTopics)
+            val newTopics = state.selectedTopics.intersect(validTopics)
+            val newSubTopics = state.selectedSubTopics.intersect(validSubTopics)
 
-        if (newTopics != state.selectedTopics || newSubTopics != state.selectedSubTopics) {
-            _uiState.update {
-                it.copy(
-                    selectedTopics = newTopics,
-                    selectedSubTopics = newSubTopics
-                )
+            if (newTopics != state.selectedTopics || newSubTopics != state.selectedSubTopics) {
+                withContext(Dispatchers.Main) {
+                    _uiState.update {
+                        it.copy(
+                            selectedTopics = newTopics,
+                            selectedSubTopics = newSubTopics
+                        )
+                    }
+                    updateFilteredCounts()
+                }
             }
-            // Need to recurse lightly to ensure counts are updated post-pruning
-            // We use a separate minimal pass so we don't endless loop
-            val globalIds = getIntersectionExcluding(null)
-            currentFilteredIds = globalIds
-            _uiState.update { it.copy(availableQuestionCount = currentFilteredIds.size) }
         }
     }
 
@@ -232,6 +262,41 @@ class QuizConfigViewModel @Inject constructor(
 
     fun toggleTag(tag: String) {
         _uiState.update { it.copy(selectedTags = toggleSet(it.selectedTags, tag)) }
+        updateFilteredCounts()
+    }
+
+    fun selectAll(type: FilterType) {
+        val state = _uiState.value
+        val validOptions = state.dynamicCounts[type]?.filterValues { it > 0 }?.keys ?: emptySet()
+
+        _uiState.update {
+            when (type) {
+                FilterType.SUBJECT -> it.copy(selectedSubjects = it.selectedSubjects + validOptions)
+                FilterType.TOPIC -> it.copy(selectedTopics = it.selectedTopics + validOptions)
+                FilterType.SUB_TOPIC -> it.copy(selectedSubTopics = it.selectedSubTopics + validOptions)
+                FilterType.DIFFICULTY -> it.copy(selectedDifficulties = it.selectedDifficulties + validOptions)
+                FilterType.EXAM_NAME -> it.copy(selectedExamNames = it.selectedExamNames + validOptions)
+                FilterType.EXAM_YEAR -> it.copy(selectedYears = it.selectedYears + validOptions)
+                FilterType.SHIFT -> it.copy(selectedShifts = it.selectedShifts + validOptions)
+                FilterType.TAGS -> it.copy(selectedTags = it.selectedTags + validOptions)
+            }
+        }
+        updateFilteredCounts()
+    }
+
+    fun clearAll(type: FilterType) {
+        _uiState.update {
+            when (type) {
+                FilterType.SUBJECT -> it.copy(selectedSubjects = emptySet())
+                FilterType.TOPIC -> it.copy(selectedTopics = emptySet())
+                FilterType.SUB_TOPIC -> it.copy(selectedSubTopics = emptySet())
+                FilterType.DIFFICULTY -> it.copy(selectedDifficulties = emptySet())
+                FilterType.EXAM_NAME -> it.copy(selectedExamNames = emptySet())
+                FilterType.EXAM_YEAR -> it.copy(selectedYears = emptySet())
+                FilterType.SHIFT -> it.copy(selectedShifts = emptySet())
+                FilterType.TAGS -> it.copy(selectedTags = emptySet())
+            }
+        }
         updateFilteredCounts()
     }
 
