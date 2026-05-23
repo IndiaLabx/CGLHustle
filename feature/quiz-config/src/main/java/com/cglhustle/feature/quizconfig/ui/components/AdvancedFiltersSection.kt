@@ -1,25 +1,17 @@
 package com.cglhustle.feature.quizconfig.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cglhustle.feature.quizconfig.ui.state.FilterType
+import com.cglhustle.engine.facetedsearch.FilterCategory
 
 @Composable
 fun AdvancedFiltersSection(
@@ -29,81 +21,74 @@ fun AdvancedFiltersSection(
     selectedYears: Set<String>,
     selectedShifts: Set<String>,
     selectedTags: Set<String>,
-    onOpenFilterSheet: (FilterType) -> Unit,
+    onOpenFilterSheet: (FilterCategory) -> Unit,
     onRemoveExamName: (String) -> Unit,
     onRemoveYear: (String) -> Unit,
     onRemoveShift: (String) -> Unit,
-    onRemoveTag: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onRemoveTag: (String) -> Unit
 ) {
-    GlassSurface(
-        modifier = modifier.fillMaxWidth(),
-        backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-        shape = MaterialTheme.shapes.medium
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            // Header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggleExpand() }
-                    .padding(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Advanced Filters",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "Advanced Filters",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
+                    fontWeight = FontWeight.Bold
                 )
-
-                val rotation by animateFloatAsState(
-                    targetValue = if (isExpanded) 180f else 0f,
-                    label = "Chevron Rotation"
-                )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    modifier = Modifier.rotate(rotation)
-                )
+                IconButton(onClick = onToggleExpand) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Toggle Advanced Filters"
+                    )
+                }
             }
 
-            // Expandable Content
-            if (isExpanded) {
+            AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    FilterRowTrigger(
-                        title = "Exam Name",
+                    FilterActionRow(
+                        title = "Exam Names",
                         selectedItems = selectedExamNames,
-                        onClick = { onOpenFilterSheet(FilterType.EXAM_NAME) },
-                        onRemove = onRemoveExamName
+                        onAddClick = { onOpenFilterSheet(FilterCategory.EXAM_NAME) },
+                        onRemoveItem = onRemoveExamName
                     )
-                    FilterRowTrigger(
-                        title = "Year",
+
+                    FilterActionRow(
+                        title = "Years",
                         selectedItems = selectedYears,
-                        onClick = { onOpenFilterSheet(FilterType.EXAM_YEAR) },
-                        onRemove = onRemoveYear
+                        onAddClick = { onOpenFilterSheet(FilterCategory.EXAM_YEAR) },
+                        onRemoveItem = onRemoveYear
                     )
-                    FilterRowTrigger(
-                        title = "Shift",
+
+                    FilterActionRow(
+                        title = "Shifts",
                         selectedItems = selectedShifts,
-                        onClick = { onOpenFilterSheet(FilterType.SHIFT) },
-                        onRemove = onRemoveShift
+                        onAddClick = { onOpenFilterSheet(FilterCategory.SHIFT) },
+                        onRemoveItem = onRemoveShift
                     )
-                    FilterRowTrigger(
+
+                    FilterActionRow(
                         title = "Tags",
                         selectedItems = selectedTags,
-                        onClick = { onOpenFilterSheet(FilterType.TAGS) },
-                        onRemove = onRemoveTag
+                        onAddClick = { onOpenFilterSheet(FilterCategory.TAGS) },
+                        onRemoveItem = onRemoveTag
                     )
                 }
             }
@@ -111,29 +96,34 @@ fun AdvancedFiltersSection(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FilterRowTrigger(
+private fun FilterActionRow(
     title: String,
     selectedItems: Set<String>,
-    onClick: () -> Unit,
-    onRemove: (String) -> Unit
+    onAddClick: () -> Unit,
+    onRemoveItem: (String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            TextButton(onClick = onClick) {
-                Text(if (selectedItems.isEmpty()) "Select" else "Add more")
+            Text(text = title, style = MaterialTheme.typography.labelLarge)
+            TextButton(
+                onClick = onAddClick,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                modifier = Modifier.height(32.dp)
+            ) {
+                Text("Select")
             }
         }
+
         if (selectedItems.isNotEmpty()) {
+            @OptIn(ExperimentalLayoutApi::class)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -142,7 +132,7 @@ private fun FilterRowTrigger(
                 selectedItems.forEach { item ->
                     RemovableChip(
                         label = item,
-                        onRemove = { onRemove(item) }
+                        onRemove = { onRemoveItem(item) }
                     )
                 }
             }
