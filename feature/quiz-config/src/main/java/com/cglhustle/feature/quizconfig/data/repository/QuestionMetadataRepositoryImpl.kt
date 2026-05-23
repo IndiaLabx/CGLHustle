@@ -70,11 +70,14 @@ class QuestionMetadataRepositoryImpl @Inject constructor(
             }
             allMetadata
         } catch (e: ClientRequestException) {
-            throw Exception("Failed to fetch metadata due to client request issue.")
+            e.printStackTrace()
+            throw Exception("Failed to fetch metadata due to client request issue: ${e.message}")
         } catch (e: ServerResponseException) {
-            throw Exception("Failed to fetch metadata due to server response issue.")
+            e.printStackTrace()
+            throw Exception("Failed to fetch metadata due to server response issue: ${e.message}")
         } catch (e: Exception) {
-            throw Exception("Unable to load quiz metadata. Please retry.")
+            e.printStackTrace()
+            throw Exception("Unable to load quiz metadata. Please retry: ${e.message}")
         }
     }
 }

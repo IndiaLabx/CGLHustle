@@ -1,5 +1,8 @@
 package com.cglhustle.feature.quizconfig.ui.viewmodel
 
+import android.util.Log
+import android.os.SystemClock
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cglhustle.engine.facetedsearch.EngineMetadata
@@ -41,7 +44,7 @@ class QuizConfigViewModel @Inject constructor(
     val uiState: StateFlow<QuizConfigUiState> = _uiState.asStateFlow()
 
     private val engine = QuizSearchEngine()
-    private val queryFlow = MutableStateFlow(FilterQuery())
+    private val queryFlow = kotlinx.coroutines.flow.MutableSharedFlow<FilterQuery>(replay = 1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
 
     // Internal base options extracted from index
     private var baseOptions: QuizFilterOptions? = null
@@ -55,7 +58,11 @@ class QuizConfigViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.Default) {
             queryFlow.collectLatest { query ->
                 // This block automatically cancels on new emissions!
+                Log.d("QuizSearchEngine", "[ENGINE_QUERY] Starting query")
+                val queryStart = SystemClock.elapsedRealtime()
                 val result = engine.query(query)
+                val queryDuration = SystemClock.elapsedRealtime() - queryStart
+                Log.d("QuizSearchEngine", "[ENGINE_QUERY] Complete in ${queryDuration}ms. Matches: ${result.totalMatches}")
 
                 withContext(Dispatchers.Main) {
                     updateUiStateFromResult(query, result)
@@ -67,6 +74,7 @@ class QuizConfigViewModel @Inject constructor(
     private fun updateUiStateFromResult(query: FilterQuery, result: QueryResult) {
         val options = baseOptions ?: return
 
+        Log.d("QuizSearchEngine", "[UI_STATE_EMIT] Emitting UI state for query result Reset")
         _uiState.update { state ->
             state.copy(
                 availableQuestionCount = result.totalMatches,
@@ -120,7 +128,11 @@ class QuizConfigViewModel @Inject constructor(
             _uiState.update { it.copy(isLoadingFilters = true, error = null) }
             try {
                 // Network Fetch
+                Log.d("QuizSearchEngine", "[METADATA_FETCH] Starting network fetch")
+                val fetchStart = SystemClock.elapsedRealtime()
                 val allMetadata = metadataRepository.fetchMetadata()
+                val fetchDuration = SystemClock.elapsedRealtime() - fetchStart
+                Log.d("QuizSearchEngine", "[METADATA_FETCH] Complete. Fetched ${allMetadata.size} rows in ${fetchDuration}ms")
 
                 withContext(Dispatchers.Default) {
                     // Convert to Engine Metadata
@@ -139,7 +151,11 @@ class QuizConfigViewModel @Inject constructor(
                     }
 
                     // Build Search Engine Index
+                    Log.d("QuizSearchEngine", "[ENGINE_BUILD_START] Starting index build")
+                    val buildStart = SystemClock.elapsedRealtime()
                     engine.buildIndex(engineMetadata)
+                    val buildDuration = SystemClock.elapsedRealtime() - buildStart
+                    Log.d("QuizSearchEngine", "[ENGINE_BUILD_COMPLETE] Complete. Built in ${buildDuration}ms")
 
                     // Extract unique base options for rendering order
                     val subjects = allMetadata.map { it.subject }.filter { it.isNotBlank() }.distinct().sorted()
@@ -171,7 +187,7 @@ class QuizConfigViewModel @Inject constructor(
                 }
 
                 // Trigger initial query calculation
-                queryFlow.value = FilterQuery()
+                queryFlow.tryEmit(FilterQuery())
 
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoadingFilters = false, error = e.localizedMessage) }
@@ -182,7 +198,7 @@ class QuizConfigViewModel @Inject constructor(
     // --- Intent Handlers ---
 
     private fun toggleSelection(category: FilterCategory, value: String) {
-        val currentQuery = queryFlow.value
+        val currentQuery = queryFlow.replayCache.firstOrNull() ?: FilterQuery()
         val currentSelections = currentQuery.selections.toMutableMap()
 
         val categorySelections = currentSelections[category]?.toMutableSet() ?: mutableSetOf()
@@ -207,11 +223,11 @@ class QuizConfigViewModel @Inject constructor(
             currentSelections.remove(FilterCategory.SUB_TOPIC)
         }
 
-        queryFlow.value = currentQuery.copy(selections = currentSelections)
+        queryFlow.tryEmit(currentQuery.copy(selections = currentSelections))
     }
 
     private fun setCategorySelections(category: FilterCategory, values: Set<String>) {
-        val currentQuery = queryFlow.value
+        val currentQuery = queryFlow.replayCache.firstOrNull() ?: FilterQuery()
         val currentSelections = currentQuery.selections.toMutableMap()
 
         if (values.isEmpty()) {
@@ -228,7 +244,7 @@ class QuizConfigViewModel @Inject constructor(
             currentSelections[category] = values
         }
 
-        queryFlow.value = currentQuery.copy(selections = currentSelections)
+        queryFlow.tryEmit(currentQuery.copy(selections = currentSelections))
     }
 
     fun selectSubject(subject: String) = toggleSelection(FilterCategory.SUBJECT, subject)
@@ -252,7 +268,7 @@ class QuizConfigViewModel @Inject constructor(
         }
 
         val visibleValues = options.filter { it.isVisible }.map { it.name }.toSet()
-        val currentSelected = queryFlow.value.selections[category] ?: emptySet()
+        val currentSelected = (queryFlow.replayCache.firstOrNull() ?: FilterQuery()).selections[category] ?: emptySet()
 
         setCategorySelections(category, currentSelected + visibleValues)
     }
@@ -292,6 +308,7 @@ class QuizConfigViewModel @Inject constructor(
     }
 
     fun resetFilters() {
+        Log.d("QuizSearchEngine", "[UI_STATE_EMIT] Emitting UI state for query result Reset")
         _uiState.update { state ->
             state.copy(
                 selectedMode = QuizMode.LEARNING,
@@ -299,16 +316,17 @@ class QuizConfigViewModel @Inject constructor(
                 quizName = ""
             )
         }
-        queryFlow.value = FilterQuery()
+        queryFlow.tryEmit(FilterQuery())
     }
 
     fun clearAdvancedFilters() {
-        val currentSelections = queryFlow.value.selections.toMutableMap()
+        val currentQuery = queryFlow.replayCache.firstOrNull() ?: FilterQuery()
+        val currentSelections = currentQuery.selections.toMutableMap()
         currentSelections.remove(FilterCategory.EXAM_NAME)
         currentSelections.remove(FilterCategory.EXAM_YEAR)
         currentSelections.remove(FilterCategory.SHIFT)
         currentSelections.remove(FilterCategory.TAGS)
-        queryFlow.value = queryFlow.value.copy(selections = currentSelections)
+        queryFlow.tryEmit(currentQuery.copy(selections = currentSelections))
     }
 
     fun startSession() {
@@ -321,13 +339,13 @@ class QuizConfigViewModel @Inject constructor(
 
                 // EXTRACT IDS ONLY NOW! On the default dispatcher.
                 val finalIds = withContext(Dispatchers.Default) {
-                    engine.extractFinalIds(queryFlow.value, state.questionCount)
+                    engine.extractFinalIds(queryFlow.replayCache.firstOrNull() ?: FilterQuery(), state.questionCount)
                 }
 
                 val quizName = state.quizName.ifEmpty { "Custom Quiz" }
                 val mode = state.selectedMode.name.lowercase()
 
-                val currentSelections = queryFlow.value.selections
+                val currentSelections = (queryFlow.replayCache.firstOrNull() ?: FilterQuery()).selections
                 val filtersJson = JSONObject().apply {
                     if (!currentSelections[FilterCategory.SUBJECT].isNullOrEmpty()) put("subjects", JSONArray(currentSelections[FilterCategory.SUBJECT]))
                     if (!currentSelections[FilterCategory.TOPIC].isNullOrEmpty()) put("topics", JSONArray(currentSelections[FilterCategory.TOPIC]))

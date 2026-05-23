@@ -3,11 +3,12 @@ package com.cglhustle.feature.quizconfig.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -31,48 +32,74 @@ fun ClassificationSection(
     onSelectAll: (FilterCategory) -> Unit,
     onClearAll: (FilterCategory) -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        if (subjectsState.any { it.isVisible }) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            val subjectsSelected = remember(subjectsState) { subjectsState.any { it.isSelected } }
+            val topicsSelected = remember(topicsState) { topicsState.any { it.isSelected } }
+
+            // SUBJECTS
             FilterCategoryRow(
                 title = "Subjects",
+                infoText = "Select broad academic domains",
                 chips = subjectsState,
                 onChipClick = onSubjectSelected,
                 onSelectAll = { onSelectAll(FilterCategory.SUBJECT) },
                 onClearAll = { onClearAll(FilterCategory.SUBJECT) }
             )
-        }
 
-        val hasVisibleTopics = remember(topicsState) { topicsState.any { it.isVisible } }
-        AnimatedVisibility(
-            visible = hasVisibleTopics,
-            enter = fadeIn() + expandVertically(),
-            // Don't use exit block here as it tricks standard scripts looking for 'exit'
-            // We'll use a simpler exit animation
-        ) {
-            FilterCategoryRow(
-                title = "Topics",
-                chips = topicsState,
-                onChipClick = onTopicSelected,
-                onSelectAll = { onSelectAll(FilterCategory.TOPIC) },
-                onClearAll = { onClearAll(FilterCategory.TOPIC) }
-            )
-        }
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        val hasVisibleSubTopics = remember(subTopicsState) { subTopicsState.any { it.isVisible } }
-        AnimatedVisibility(
-            visible = hasVisibleSubTopics,
-            enter = fadeIn() + expandVertically()
-        ) {
-            FilterCategoryRow(
-                title = "Sub-Topics",
-                chips = subTopicsState,
-                onChipClick = onSubTopicSelected,
-                onSelectAll = { onSelectAll(FilterCategory.SUB_TOPIC) },
-                onClearAll = { onClearAll(FilterCategory.SUB_TOPIC) }
-            )
+            // TOPICS
+            if (subjectsSelected) {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + expandVertically()
+                ) {
+                    FilterCategoryRow(
+                        title = "Topics",
+                        infoText = "Select specific topics within the chosen subjects",
+                        chips = topicsState,
+                        onChipClick = onTopicSelected,
+                        onSelectAll = { onSelectAll(FilterCategory.TOPIC) },
+                        onClearAll = { onClearAll(FilterCategory.TOPIC) }
+                    )
+                }
+            } else {
+                PlaceholderCategoryRow(title = "Topics", placeholder = "Select a Subject first")
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+            // SUB-TOPICS
+            if (topicsSelected) {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + expandVertically()
+                ) {
+                    FilterCategoryRow(
+                        title = "Sub-Topics",
+                        infoText = "Drill down into highly specific sub-topics",
+                        chips = subTopicsState,
+                        onChipClick = onSubTopicSelected,
+                        onSelectAll = { onSelectAll(FilterCategory.SUB_TOPIC) },
+                        onClearAll = { onClearAll(FilterCategory.SUB_TOPIC) }
+                    )
+                }
+            } else {
+                PlaceholderCategoryRow(title = "Sub-Topics", placeholder = "Select a Topic first")
+            }
         }
     }
 }
@@ -81,6 +108,7 @@ fun ClassificationSection(
 @Composable
 private fun FilterCategoryRow(
     title: String,
+    infoText: String,
     chips: ImmutableList<FilterChipState>,
     onChipClick: (String) -> Unit,
     onSelectAll: () -> Unit,
@@ -90,15 +118,32 @@ private fun FilterCategoryRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = { PlainTooltip { Text(infoText) } },
+                    state = rememberTooltipState()
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "Info about $title",
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
             val hasSelection = chips.any { it.isSelected }
             TextButton(
@@ -116,8 +161,7 @@ private fun FilterCategoryRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             chips.forEach { chipState ->
@@ -127,10 +171,37 @@ private fun FilterCategoryRow(
                         onClick = { onChipClick(chipState.name) },
                         label = {
                             Text("${chipState.name} (${chipState.count})")
-                        }
+                        },
+                        shape = RoundedCornerShape(50)
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PlaceholderCategoryRow(title: String, placeholder: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = placeholder,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(12.dp)
+            )
         }
     }
 }
