@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +34,9 @@ fun ClassificationSection(
     onSelectAll: (FilterCategory) -> Unit,
     onClearAll: (FilterCategory) -> Unit
 ) {
+    LaunchedEffect(subjectsState, topicsState, subTopicsState) {
+        Log.d("QuizConfigUI", "[DEBUG_RECOMPOSITION] ClassificationSection recomposed.")
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -62,12 +67,8 @@ fun ClassificationSection(
             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
             // TOPICS
-            if (subjectsSelected) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + expandVertically()
-                ) {
-                    FilterCategoryRow(
+            // [DEBUG] Bypassing AnimatedVisibility and hierarchy rules
+            FilterCategoryRow(
                         title = "Topics",
                         infoText = "Select specific topics within the chosen subjects",
                         chips = topicsState,
@@ -75,20 +76,12 @@ fun ClassificationSection(
                         onSelectAll = { onSelectAll(FilterCategory.TOPIC) },
                         onClearAll = { onClearAll(FilterCategory.TOPIC) }
                     )
-                }
-            } else {
-                PlaceholderCategoryRow(title = "Topics", placeholder = "Select a Subject first")
-            }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
             // SUB-TOPICS
-            if (topicsSelected) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + expandVertically()
-                ) {
-                    FilterCategoryRow(
+            // [DEBUG] Bypassing AnimatedVisibility and hierarchy rules
+            FilterCategoryRow(
                         title = "Sub-Topics",
                         infoText = "Drill down into highly specific sub-topics",
                         chips = subTopicsState,
@@ -96,10 +89,6 @@ fun ClassificationSection(
                         onSelectAll = { onSelectAll(FilterCategory.SUB_TOPIC) },
                         onClearAll = { onClearAll(FilterCategory.SUB_TOPIC) }
                     )
-                }
-            } else {
-                PlaceholderCategoryRow(title = "Sub-Topics", placeholder = "Select a Topic first")
-            }
         }
     }
 }
@@ -165,7 +154,7 @@ private fun FilterCategoryRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             chips.forEach { chipState ->
-                if (chipState.isVisible) {
+                // if (chipState.isVisible) { // [DEBUG] Force visibility
                     FilterChip(
                         selected = chipState.isSelected,
                         onClick = { onChipClick(chipState.name) },
@@ -174,7 +163,7 @@ private fun FilterCategoryRow(
                         },
                         shape = RoundedCornerShape(50)
                     )
-                }
+                // }
             }
         }
     }

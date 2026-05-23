@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
+import androidx.compose.runtime.LaunchedEffect
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +23,11 @@ fun DifficultySelector(
     difficultiesState: ImmutableList<FilterChipState>,
     onDifficultySelected: (String) -> Unit
 ) {
-    if (difficultiesState.none { it.isVisible }) return
+    // if (difficultiesState.none { it.isVisible }) return // [DEBUG] Disabled for rendering test
+    LaunchedEffect(difficultiesState) {
+        Log.d("QuizConfigUI", "[DEBUG_RECOMPOSITION] DifficultySelector recomposed. Elements: ${difficultiesState.size}")
+    }
+
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -71,7 +77,7 @@ fun DifficultySelector(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 difficultiesState.forEach { chipState ->
-                    if (chipState.isVisible) {
+                    // if (chipState.isVisible) { // [DEBUG] Disabled
                         FilterChip(
                             selected = chipState.isSelected,
                             onClick = { onDifficultySelected(chipState.name) },
@@ -80,7 +86,7 @@ fun DifficultySelector(
                             },
                             shape = RoundedCornerShape(50)
                         )
-                    }
+                    // }
                 }
             }
         }

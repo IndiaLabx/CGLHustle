@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +31,9 @@ fun AdvancedFiltersSection(
     onRemoveShift: (String) -> Unit,
     onRemoveTag: (String) -> Unit
 ) {
+    LaunchedEffect(isExpanded) {
+        Log.d("QuizConfigUI", "[DEBUG_RECOMPOSITION] AdvancedFiltersSection recomposed. Expanded: $isExpanded")
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -61,7 +66,7 @@ fun AdvancedFiltersSection(
                 )
             }
 
-            AnimatedVisibility(visible = isExpanded) {
+            if (isExpanded) { // [DEBUG] Disabled AnimatedVisibility for layout test
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
