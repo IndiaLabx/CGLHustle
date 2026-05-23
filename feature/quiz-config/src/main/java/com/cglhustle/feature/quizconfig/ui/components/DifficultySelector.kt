@@ -3,17 +3,14 @@ package com.cglhustle.feature.quizconfig.ui.components
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
-import androidx.compose.runtime.LaunchedEffect
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 import com.cglhustle.engine.facetedsearch.FilterChipState
 import kotlinx.collections.immutable.ImmutableList
 
@@ -23,35 +20,29 @@ fun DifficultySelector(
     difficultiesState: ImmutableList<FilterChipState>,
     onDifficultySelected: (String) -> Unit
 ) {
-    // if (difficultiesState.none { it.isVisible }) return // [DEBUG] Disabled for rendering test
-    LaunchedEffect(difficultiesState) {
-        Log.d("QuizConfigUI", "[DEBUG_RECOMPOSITION] DifficultySelector recomposed. Elements: ${difficultiesState.size}")
-    }
-
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(AppSpacing.CardPadding)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                    .padding(bottom = AppSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Difficulty",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 TooltipBox(
@@ -63,7 +54,7 @@ fun DifficultySelector(
                         imageVector = Icons.Outlined.Info,
                         contentDescription = "Info about Difficulty",
                         modifier = Modifier
-                            .padding(start = 8.dp)
+                            .padding(start = AppSpacing.sm)
                             .size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -74,19 +65,26 @@ fun DifficultySelector(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
             ) {
                 difficultiesState.forEach { chipState ->
-                    // if (chipState.isVisible) { // [DEBUG] Disabled
-                        FilterChip(
-                            selected = chipState.isSelected,
-                            onClick = { onDifficultySelected(chipState.name) },
-                            label = {
-                                Text("${chipState.name} (${chipState.count})")
-                            },
-                            shape = RoundedCornerShape(50)
+                    FilterChip(
+                        selected = chipState.isSelected,
+                        onClick = { onDifficultySelected(chipState.name) },
+                        label = {
+                            Text("${chipState.name} (${chipState.count})")
+                        },
+                        shape = MaterialTheme.shapes.small,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            borderColor = MaterialTheme.colorScheme.outlineVariant,
+                            enabled = true,
+                            selected = chipState.isSelected
                         )
-                    // }
+                    )
                 }
             }
         }

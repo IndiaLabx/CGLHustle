@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
@@ -17,20 +16,24 @@ import androidx.compose.ui.unit.dp
 fun GlassSurface(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(16.dp),
-    backgroundColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-    borderColor: Brush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.2f),
-            Color.White.copy(alpha = 0.05f)
-        )
-    ),
+    backgroundColor: Color = Color.Transparent,
     content: @Composable () -> Unit
 ) {
+    // Pseudo glass implementation using Tonal Layering
+    // Removed raw Color.White borders and heavy alpha rendering.
     Box(
         modifier = modifier
             .clip(shape)
-            .background(backgroundColor)
-            .border(width = 1.dp, brush = borderColor, shape = shape)
+            .background(
+                if (backgroundColor == Color.Transparent)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                else backgroundColor
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = shape
+            )
     ) {
         content()
     }

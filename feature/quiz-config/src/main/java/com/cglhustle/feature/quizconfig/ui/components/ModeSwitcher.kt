@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 import com.cglhustle.feature.quizconfig.domain.model.QuizMode
 
 @Composable
@@ -29,20 +30,21 @@ fun ModeSwitcher(
     onModeSelected: (QuizMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassSurface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier.padding(AppSpacing.xs),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             ModeSegment(
                 title = "Learning",
                 icon = Icons.Default.Create,
                 isSelected = selectedMode == QuizMode.LEARNING,
-                activeColor = Color(0xFF00BCD4), // Cyan
+                activeColor = MaterialTheme.colorScheme.primary,
                 onClick = { onModeSelected(QuizMode.LEARNING) },
                 modifier = Modifier.weight(1f)
             )
@@ -50,7 +52,7 @@ fun ModeSwitcher(
                 title = "Mock",
                 icon = Icons.Default.Info,
                 isSelected = selectedMode == QuizMode.MOCK,
-                activeColor = Color(0xFFFFC107), // Amber
+                activeColor = MaterialTheme.colorScheme.tertiary,
                 onClick = { onModeSelected(QuizMode.MOCK) },
                 modifier = Modifier.weight(1f)
             )
@@ -69,7 +71,7 @@ private fun GodModeSegment(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeColor = Color(0xFF9C27B0) // Purple
+    val activeColor = MaterialTheme.colorScheme.error
 
     // Pulse animation when selected
     val infiniteTransition = rememberInfiniteTransition(label = "god_mode_pulse")
@@ -83,15 +85,15 @@ private fun GodModeSegment(
         label = "god_mode_scale"
     )
 
-    val backgroundColor = if (isSelected) activeColor.copy(alpha = 0.2f) else Color.Transparent
+    val backgroundColor = if (isSelected) activeColor.copy(alpha = 0.15f) else Color.Transparent
     val contentColor = if (isSelected) activeColor else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = AppSpacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -103,7 +105,7 @@ private fun GodModeSegment(
                 .size(24.dp)
                 .scale(scale)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.xs))
         Text(
             text = "God Mode",
             style = MaterialTheme.typography.labelMedium,
@@ -126,10 +128,10 @@ private fun ModeSegment(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = AppSpacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -139,7 +141,7 @@ private fun ModeSegment(
             tint = contentColor,
             modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.xs))
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,

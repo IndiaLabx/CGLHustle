@@ -1,12 +1,12 @@
 package com.cglhustle.feature.quizconfig.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cglhustle.core.ui.theme.AppSpacing
 import com.cglhustle.engine.facetedsearch.FilterCategory
 import com.cglhustle.engine.facetedsearch.FilterChipState
 import kotlinx.collections.immutable.ImmutableList
@@ -35,40 +35,41 @@ fun ActiveFiltersSection(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(AppSpacing.CardPadding)
         ) {
             Text(
                 text = "Active Filters",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = AppSpacing.md)
             )
 
             if (!hasAnyActiveFilters) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = "No filters selected.\nSelect criteria below to refine questions.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(12.dp)
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(AppSpacing.md)
                     )
                 }
             } else {
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                 ) {
                     activeSubjects.forEach { chip ->
                         RemovableChip(label = chip.name, onRemove = { onRemoveSubject(chip.name) })

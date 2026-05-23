@@ -15,12 +15,10 @@ fun AnimatedBackground(
     scrollState: LazyListState, // Kept to satisfy function signature without breaking dependents
     modifier: Modifier = Modifier
 ) {
-    // Pure clean surface to ensure high contrast, maximum performance, and crisp shimmers.
-    val themeBg = MaterialTheme.colorScheme.surface
-
+    // Rely completely on the global Theme's background instead of a hardcoded surface.
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(themeBg)
+            .background(MaterialTheme.colorScheme.background)
     )
 }
