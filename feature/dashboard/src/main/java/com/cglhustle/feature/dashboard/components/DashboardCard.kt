@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.style.TextOverflow
-import com.cglhustle.core.ui.theme.AppSpacing
+import com.cglhustle.core.designsystem.theme.AppSpacing
 import com.cglhustle.feature.dashboard.model.DashboardCardModel
 
 @Composable

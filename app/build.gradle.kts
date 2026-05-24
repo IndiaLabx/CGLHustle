@@ -77,6 +77,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:sync"))
     implementation(project(":core:ui"))
+    implementation(project(":core:designsystem"))
     implementation(project(":feature:mocktest"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:quiz-config"))

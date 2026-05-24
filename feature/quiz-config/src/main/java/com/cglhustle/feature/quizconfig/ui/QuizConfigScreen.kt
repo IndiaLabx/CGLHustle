@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.cglhustle.core.ui.theme.AppSpacing
+import com.cglhustle.core.designsystem.theme.AppSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cglhustle.feature.quizconfig.ui.components.*
 import com.cglhustle.engine.facetedsearch.FilterCategory
