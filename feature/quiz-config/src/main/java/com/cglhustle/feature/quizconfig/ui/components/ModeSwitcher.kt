@@ -21,7 +21,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.cglhustle.core.ui.theme.AppSpacing
+import com.cglhustle.core.designsystem.theme.AppSpacing
 import com.cglhustle.feature.quizconfig.domain.model.QuizMode
 
 @Composable

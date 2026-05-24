@@ -1,4 +1,4 @@
-package com.cglhustle.core.ui.theme
+package com.cglhustle.core.designsystem.theme
 
 import android.app.Activity
 import android.os.Build

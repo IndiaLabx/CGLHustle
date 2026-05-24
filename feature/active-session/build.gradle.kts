@@ -44,6 +44,7 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(project(":core:ui"))
+    implementation(project(":core:designsystem"))
     implementation(project(":core:common"))
     implementation(project(":core:network"))
     implementation(libs.supabase.gotrue)

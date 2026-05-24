@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cglhustle.core.ui.theme.AppSpacing
+import com.cglhustle.core.designsystem.theme.AppSpacing
 
 @Composable
 fun QuestionTypeSelector(

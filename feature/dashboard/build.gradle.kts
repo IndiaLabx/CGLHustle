@@ -35,6 +35,7 @@ android {
 
 dependencies {
     implementation(project(":core:ui"))
+    implementation(project(":core:designsystem"))
     implementation(project(":core:network"))
     implementation(libs.supabase.gotrue)
     implementation(libs.androidx.core.ktx)

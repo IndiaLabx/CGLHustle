@@ -15,13 +15,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import com.cglhustle.core.ui.theme.AppSpacing
+import com.cglhustle.core.designsystem.theme.AppSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cglhustle.feature.dashboard.components.DashboardCard
 import com.cglhustle.feature.dashboard.model.DashboardCardModel
 import com.cglhustle.feature.dashboard.viewmodel.DashboardEvent
 import com.cglhustle.feature.dashboard.viewmodel.DashboardViewModel
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
 import java.time.LocalTime
 
 @Composable
@@ -36,7 +36,7 @@ fun DashboardRoute(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        viewModel.events.collectLatest { event ->
+        viewModel.events.collect { event ->
             when (event) {
                 is DashboardEvent.NavigateTo -> {
                     when (event.route) {
