@@ -13,69 +13,49 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Indigo500,
-    onPrimary = Slate50,
-    primaryContainer = Indigo900,
-    onPrimaryContainer = Indigo100,
+    primary = BrandPrimaryDark,
+    onPrimary = BackgroundDark,
+    primaryContainer = BrandPrimaryDark.copy(alpha = 0.2f),
+    onPrimaryContainer = BrandPrimaryDark,
 
-    secondary = Slate400,
-    onSecondary = Slate950,
-    secondaryContainer = Slate800,
-    onSecondaryContainer = Slate200,
+    background = BackgroundDark,
+    onBackground = TextHighEmphasisDark,
 
-    tertiary = Indigo300,
-    onTertiary = Indigo950,
-    tertiaryContainer = Indigo800,
-    onTertiaryContainer = Indigo100,
+    surface = SurfaceDark,
+    onSurface = TextHighEmphasisDark,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = TextMediumEmphasisDark,
 
-    background = Slate950,
-    onBackground = Slate50,
+    outline = OutlineDark,
+    outlineVariant = OutlineDark.copy(alpha = 0.5f),
 
-    surface = Slate900,
-    onSurface = Slate50,
-    surfaceVariant = Slate800,
-    onSurfaceVariant = Slate300,
-
-    outline = Slate700,
-    outlineVariant = Slate800,
-
-    error = Rose500,
-    onError = Rose50,
-    errorContainer = Rose900,
-    onErrorContainer = Rose100
+    error = SemanticErrorDark,
+    onError = BackgroundDark,
+    errorContainer = SemanticErrorDark.copy(alpha = 0.2f),
+    onErrorContainer = SemanticErrorDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Indigo600,
-    onPrimary = Slate50,
-    primaryContainer = Indigo100,
-    onPrimaryContainer = Indigo900,
+    primary = BrandPrimaryLight,
+    onPrimary = SurfaceLight,
+    primaryContainer = BrandPrimaryLight.copy(alpha = 0.1f),
+    onPrimaryContainer = BrandPrimaryLight,
 
-    secondary = Slate600,
-    onSecondary = Slate50,
-    secondaryContainer = Slate100,
-    onSecondaryContainer = Slate900,
+    background = BackgroundLight,
+    onBackground = TextHighEmphasisLight,
 
-    tertiary = Indigo500,
-    onTertiary = Slate50,
-    tertiaryContainer = Indigo50,
-    onTertiaryContainer = Indigo900,
+    surface = SurfaceLight,
+    onSurface = TextHighEmphasisLight,
+    surfaceVariant = SurfaceVariantLight,
+    onSurfaceVariant = TextMediumEmphasisLight,
 
-    background = Slate50,
-    onBackground = Slate900,
+    outline = OutlineLight,
+    outlineVariant = OutlineLight.copy(alpha = 0.5f),
 
-    surface = Slate50, // Slightly warm/cool neutral instead of pure white
-    onSurface = Slate900,
-    surfaceVariant = Slate100,
-    onSurfaceVariant = Slate600,
-
-    outline = Slate300,
-    outlineVariant = Slate200,
-
-    error = Rose600,
-    onError = Rose50,
-    errorContainer = Rose100,
-    onErrorContainer = Rose900
+    error = SemanticError,
+    onError = SurfaceLight,
+    errorContainer = SemanticError.copy(alpha = 0.1f),
+    onErrorContainer = SemanticError
 )
 
 @Composable
@@ -89,10 +69,11 @@ fun CglHustleTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            // Use transparent status bar so content can draw behind it cleanly if needed,
+            // or match background strictly for premium feel.
             window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
 
-            // Also handle navigation bar if needed
             window.navigationBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }

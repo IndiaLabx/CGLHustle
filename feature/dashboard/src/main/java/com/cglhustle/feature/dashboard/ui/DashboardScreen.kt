@@ -3,7 +3,6 @@ package com.cglhustle.feature.dashboard.ui
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -11,143 +10,141 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.cglhustle.core.ui.theme.AppSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cglhustle.feature.dashboard.components.DashboardCard
 import com.cglhustle.feature.dashboard.model.DashboardCardModel
+import com.cglhustle.feature.dashboard.viewmodel.DashboardEvent
 import com.cglhustle.feature.dashboard.viewmodel.DashboardViewModel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalTime
 
 @Composable
 fun DashboardRoute(
     onNavigateToMcq: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isAdmin = viewModel.isAdmin()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is DashboardEvent.NavigateTo -> {
+                    when (event.route) {
+                        "mcqs" -> onNavigateToMcq()
+                        else -> snackbarHostState.showSnackbar("${event.route} is coming soon ✨")
+                    }
+                }
+                is DashboardEvent.OpenExternalLink -> {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.url))
+                    context.startActivity(intent)
+                }
+                is DashboardEvent.ShowToast -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     DashboardScreen(
         userName = uiState.userName,
         isAdmin = isAdmin,
-        onNavigateToMcq = onNavigateToMcq
+        snackbarHostState = snackbarHostState,
+        onActionClick = viewModel::onActionClick,
+        modifier = modifier
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     userName: String,
     isAdmin: Boolean,
-    onNavigateToMcq: () -> Unit
+    snackbarHostState: SnackbarHostState,
+    onActionClick: (String?) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-
     val greeting = remember(userName) { getGreeting(userName) }
 
     val cards = remember(isAdmin) {
         mutableListOf(
-            DashboardCardModel("MCQs Quiz", "Practice and learn", Color(0xFFD946EF), Icons.Rounded.Psychology, "mcqs"),
-            DashboardCardModel("English Zone", "Master the language", Color(0xFFF43F5E), Icons.AutoMirrored.Rounded.MenuBook, "english"),
-            DashboardCardModel("Tools", "Utilities & calculators", Color(0xFFF59E0B), Icons.Rounded.Build, "tools"),
-            DashboardCardModel("Analytics", "Track your progress", Color(0xFF3B82F6), Icons.Rounded.Analytics, "analytics"),
-            DashboardCardModel("Bookmarks", "Saved questions", Color(0xFF8B5CF6), Icons.Rounded.Bookmarks, "bookmarks")
+            DashboardCardModel("MCQs Quiz", "Practice and learn", Icons.Rounded.Psychology, "mcqs"),
+            DashboardCardModel("English Zone", "Master the language", Icons.AutoMirrored.Rounded.MenuBook, "english"),
+            DashboardCardModel("Tools", "Utilities & calculators", Icons.Rounded.Build, "tools"),
+            DashboardCardModel("Analytics", "Track your progress", Icons.Rounded.Analytics, "analytics"),
+            DashboardCardModel("Bookmarks", "Saved questions", Icons.Rounded.Bookmarks, "bookmarks")
         ).apply {
             if (isAdmin) {
-                add(DashboardCardModel("Admin Room", "Manage content", Color(0xFFEF4444), Icons.Rounded.AdminPanelSettings, "admin"))
+                add(DashboardCardModel("Admin Room", "Manage content", Icons.Rounded.AdminPanelSettings, "admin"))
             }
-            add(DashboardCardModel("Download", "Get offline resources", Color(0xFF06B6D4), Icons.Rounded.Download, null) {
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("https://drive.google.com/drive/folders/1Owy8_qnvMOTw5WLRGLQajCiScN-dOHtF")
-                )
-                context.startActivity(intent)
-                Toast.makeText(context, "Your download page has been opened in next tab go and see", Toast.LENGTH_LONG).show()
-            })
-            add(DashboardCardModel("About Us", "Our story", Color(0xFF64748B), Icons.Rounded.Info, "about"))
+            add(DashboardCardModel("Download", "Get offline resources", Icons.Rounded.Download, null))
+            add(DashboardCardModel("About Us", "Our story", Icons.Rounded.Info, "about"))
         }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Transparent // Let background shine through
+        containerColor = MaterialTheme.colorScheme.background,
+        modifier = modifier.fillMaxSize()
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF0F172A), // Deep charcoal
-                            Color(0xFF020617)  // Near black
-                        )
-                    )
-                )
                 .padding(paddingValues)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Header
-                Column(
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 20.dp)
-                ) {
-                    Text(
-                        text = "Dashboard",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 36.sp,
-                        color = Color.White,
-                        letterSpacing = (-0.5).sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = greeting,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
+            // Header
+            Column(
+                modifier = Modifier.padding(
+                    start = AppSpacing.lg,
+                    end = AppSpacing.lg,
+                    top = AppSpacing.xl,
+                    bottom = AppSpacing.lg
+                )
+            ) {
+                Text(
+                    text = "Dashboard",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(AppSpacing.xs))
+                Text(
+                    text = greeting,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = AppSpacing.lg)
+            ) {
+                val columns = when {
+                    maxWidth < 600.dp -> 2
+                    maxWidth < 900.dp -> 3
+                    else -> 4
                 }
 
-                BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                    val columns = when {
-                        maxWidth < 600.dp -> 2
-                        maxWidth < 900.dp -> 3
-                        else -> 4
-                    }
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(columns),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(bottom = 24.dp)
-                    ) {
-                        items(cards) { card ->
-                            DashboardCard(model = card) {
-                                if (card.action != null) {
-                                    card.action.invoke()
-                                } else {
-                                    when (card.route) {
-                                        "mcqs" -> onNavigateToMcq()
-                                        else -> {
-                                            coroutineScope.launch {
-                                                snackbarHostState.showSnackbar("${card.title} is coming soon ✨")
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
+                    contentPadding = PaddingValues(bottom = AppSpacing.xl)
+                ) {
+                    items(cards) { card ->
+                        DashboardCard(
+                            model = card,
+                            onClick = { onActionClick(card.route) }
+                        )
                     }
                 }
             }
