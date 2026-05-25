@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -27,6 +29,8 @@ import java.time.LocalTime
 @Composable
 fun DashboardRoute(
     onNavigateToMcq: () -> Unit,
+    onThemeToggle: () -> Unit = {},
+    isDarkMode: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -60,6 +64,8 @@ fun DashboardRoute(
         isAdmin = isAdmin,
         snackbarHostState = snackbarHostState,
         onActionClick = viewModel::onActionClick,
+        onThemeToggle = onThemeToggle,
+        isDarkMode = isDarkMode,
         modifier = modifier
     )
 }
@@ -71,6 +77,8 @@ fun DashboardScreen(
     isAdmin: Boolean,
     snackbarHostState: SnackbarHostState,
     onActionClick: (String?) -> Unit,
+    onThemeToggle: () -> Unit,
+    isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     val greeting = remember(userName) { getGreeting(userName) }
@@ -102,25 +110,39 @@ fun DashboardScreen(
                 .padding(paddingValues)
         ) {
             // Header
-            Column(
-                modifier = Modifier.padding(
-                    start = AppSpacing.lg,
-                    end = AppSpacing.lg,
-                    top = AppSpacing.xl,
-                    bottom = AppSpacing.lg
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppSpacing.lg,
+                        end = AppSpacing.lg,
+                        top = AppSpacing.xl,
+                        bottom = AppSpacing.lg
+                    ),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Dashboard",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(AppSpacing.xs))
-                Text(
-                    text = greeting,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column {
+                    Text(
+                        text = "Dashboard",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(AppSpacing.xs))
+                    Text(
+                        text = greeting,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(onClick = onThemeToggle) {
+                    Icon(
+                        imageVector = if (isDarkMode) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                        contentDescription = "Toggle Theme",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
 
             BoxWithConstraints(

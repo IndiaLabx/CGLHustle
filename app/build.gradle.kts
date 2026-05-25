@@ -85,6 +85,7 @@ dependencies {
     implementation(project(":feature:results"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:mcqs"))
+    implementation(libs.androidx.datastore.preferences)
 
     // Supabase Auth dependencies
     implementation(platform(libs.supabase.bom))
