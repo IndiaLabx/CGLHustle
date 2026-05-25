@@ -29,9 +29,9 @@ import java.time.LocalTime
 @Composable
 fun DashboardRoute(
     onNavigateToMcq: () -> Unit,
+    modifier: Modifier = Modifier,
     onThemeToggle: () -> Unit = {},
     isDarkMode: Boolean = false,
-    modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -45,7 +45,7 @@ fun DashboardRoute(
                 is DashboardEvent.NavigateTo -> {
                     when (event.route) {
                         "mcqs" -> onNavigateToMcq()
-                        else -> snackbarHostState.showSnackbar("${event.route} is coming soon ✨")
+                        else -> snackbarHostState.showSnackbar("\${event.route} is coming soon ✨")
                     }
                 }
                 is DashboardEvent.OpenExternalLink -> {
