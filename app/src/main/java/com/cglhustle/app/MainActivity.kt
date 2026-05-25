@@ -1,6 +1,7 @@
 package com.cglhustle.app
 
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.gotrue.SessionStatus
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
+import com.cglhustle.core.ui.theme.ThemePreferences
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -24,10 +26,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var authRepository: AuthRepository
 
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            CglHustleTheme {
+            val isDarkMode by viewModel.isDarkMode.collectAsState()
+
+            CglHustleTheme(darkTheme = isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -54,7 +60,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    AppNavGraph(navController = navController, startDestination = "auth")
+                    AppNavGraph(navController = navController, startDestination = "auth", onThemeToggle = viewModel::toggleTheme, isDarkMode = isDarkMode)
                 }
             }
         }

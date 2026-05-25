@@ -15,7 +15,9 @@ import com.cglhustle.feature.mcqs.ui.McqRoute
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = "auth"
+    startDestination: String = "auth",
+    onThemeToggle: () -> Unit = {},
+    isDarkMode: Boolean = false
 ) {
     NavHost(
         navController = navController,
@@ -33,7 +35,9 @@ fun AppNavGraph(
             DashboardRoute(
                 onNavigateToMcq = {
                     navController.navigate("mcqs")
-                }
+                },
+                onThemeToggle = onThemeToggle,
+                isDarkMode = isDarkMode
             )
         }
 
