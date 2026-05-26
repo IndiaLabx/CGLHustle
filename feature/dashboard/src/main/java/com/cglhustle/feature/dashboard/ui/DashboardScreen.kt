@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
@@ -14,7 +15,9 @@ import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.cglhustle.core.designsystem.theme.AppSpacing
@@ -26,9 +29,27 @@ import com.cglhustle.feature.dashboard.viewmodel.DashboardViewModel
 import kotlinx.coroutines.flow.collect
 import java.time.LocalTime
 
+private val primaryCards = listOf(
+    DashboardCardModel("Continue Quiz", "Jump back in", Icons.Rounded.PlayArrow, "mcqs"),
+    DashboardCardModel("Create Quiz", "Customize filters", Icons.Rounded.Tune, "create_quiz"),
+    DashboardCardModel("Progress", "See results", Icons.Rounded.ShowChart, "analytics"),
+    DashboardCardModel("Bookmarks", "Saved questions", Icons.Rounded.Bookmarks, "bookmarks")
+)
+
+private val defaultExploreCards = listOf(
+    DashboardCardModel("English Zone", "Master the language", Icons.AutoMirrored.Rounded.MenuBook, "english"),
+    DashboardCardModel("Tools", "Utilities & calculators", Icons.Rounded.Build, "tools"),
+    DashboardCardModel("Mock Test", "Exam-like challenge", Icons.Rounded.Timer, "mocktest"),
+    DashboardCardModel("Downloads", "Offline resources", Icons.Rounded.Download, null),
+    DashboardCardModel("About Us", "Our story", Icons.Rounded.Info, "about")
+)
+
+private val adminCard = DashboardCardModel("Admin Room", "Manage content", Icons.Rounded.AdminPanelSettings, "admin")
+
 @Composable
 fun DashboardRoute(
     onNavigateToMcq: () -> Unit,
+    onNavigateToQuizConfig: () -> Unit,
     modifier: Modifier = Modifier,
     onThemeToggle: () -> Unit = {},
     isDarkMode: Boolean = false,
@@ -45,6 +66,7 @@ fun DashboardRoute(
                 is DashboardEvent.NavigateTo -> {
                     when (event.route) {
                         "mcqs" -> onNavigateToMcq()
+                        "create_quiz" -> onNavigateToQuizConfig()
                         else -> snackbarHostState.showSnackbar("\${event.route} is coming soon ✨")
                     }
                 }
@@ -83,20 +105,8 @@ fun DashboardScreen(
 ) {
     val greeting = remember(userName) { getGreeting(userName) }
 
-    val cards = remember(isAdmin) {
-        mutableListOf(
-            DashboardCardModel("MCQs Quiz", "Practice and learn", Icons.Rounded.Psychology, "mcqs"),
-            DashboardCardModel("English Zone", "Master the language", Icons.AutoMirrored.Rounded.MenuBook, "english"),
-            DashboardCardModel("Tools", "Utilities & calculators", Icons.Rounded.Build, "tools"),
-            DashboardCardModel("Analytics", "Track your progress", Icons.Rounded.Analytics, "analytics"),
-            DashboardCardModel("Bookmarks", "Saved questions", Icons.Rounded.Bookmarks, "bookmarks")
-        ).apply {
-            if (isAdmin) {
-                add(DashboardCardModel("Admin Room", "Manage content", Icons.Rounded.AdminPanelSettings, "admin"))
-            }
-            add(DashboardCardModel("Download", "Get offline resources", Icons.Rounded.Download, null))
-            add(DashboardCardModel("About Us", "Our story", Icons.Rounded.Info, "about"))
-        }
+    val exploreCards = remember(isAdmin) {
+        if (isAdmin) defaultExploreCards + adminCard else defaultExploreCards
     }
 
     Scaffold(
@@ -109,41 +119,98 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Header
-            Row(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
                         start = AppSpacing.lg,
                         end = AppSpacing.lg,
                         top = AppSpacing.xl,
-                        bottom = AppSpacing.lg
+                        bottom = AppSpacing.md
                     ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
             ) {
-                Column {
-                    Text(
-                        text = "Dashboard",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(AppSpacing.xs))
-                    Text(
-                        text = greeting,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.lg),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Welcome",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = greeting,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
 
-                IconButton(onClick = onThemeToggle) {
-                    Icon(
-                        imageVector = if (isDarkMode) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                        contentDescription = "Toggle Theme",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
+                    FilledTonalIconButton(onClick = onThemeToggle) {
+                        Icon(
+                            imageVector = if (isDarkMode) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                            contentDescription = "Toggle Theme"
+                        )
+                    }
                 }
             }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppSpacing.lg)
+            ) {
+                Text(
+                    text = "Quick actions",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(AppSpacing.sm))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+                ) {
+                    primaryCards.take(2).forEach { card ->
+                        FilledTonalButton(
+                            onClick = { onActionClick(card.route) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(card.icon, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(card.title)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(AppSpacing.sm))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+                ) {
+                    primaryCards.drop(2).forEach { card ->
+                        OutlinedButton(
+                            onClick = { onActionClick(card.route) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(card.icon, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(card.title)
+                        }
+                    }
+                }
+            }
+
+            Text(
+                text = "Explore",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md)
+            )
 
             BoxWithConstraints(
                 modifier = Modifier
@@ -162,11 +229,17 @@ fun DashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
                     contentPadding = PaddingValues(bottom = AppSpacing.xl)
                 ) {
-                    items(cards) { card ->
-                        DashboardCard(
-                            model = card,
-                            onClick = { onActionClick(card.route) }
-                        )
+                    items(items = exploreCards, key = { card -> card.title }) { card ->
+                        Box(modifier = Modifier.clip(RoundedCornerShape(20.dp))) {
+                            DashboardCard(
+                                model = card,
+                                onClick = { onActionClick(card.route) }
+                            )
+                        }
+                    }
+                }
+            }
+                        }
                     }
                 }
             }
