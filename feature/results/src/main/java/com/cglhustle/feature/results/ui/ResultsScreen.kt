@@ -46,7 +46,7 @@ import com.cglhustle.core.common.error.UnknownError
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultsScreen(
-    onDone: () -> Unit,
+    onDone: () -> Unit = {},
     viewModel: ResultsViewModel = hiltViewModel()
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }

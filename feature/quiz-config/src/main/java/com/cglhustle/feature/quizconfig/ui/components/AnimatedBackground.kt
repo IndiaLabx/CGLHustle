@@ -11,8 +11,8 @@ import com.cglhustle.feature.quizconfig.domain.model.QuizMode
 
 @Composable
 fun AnimatedBackground(
-    mode: QuizMode,
-    scrollState: LazyListState, // Kept to satisfy function signature without breaking dependents
+
+
     modifier: Modifier = Modifier
 ) {
     // Rely completely on the global Theme's background instead of a hardcoded surface.

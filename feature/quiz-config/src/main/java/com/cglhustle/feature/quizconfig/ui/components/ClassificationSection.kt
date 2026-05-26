@@ -45,8 +45,8 @@ fun ClassificationSection(
                 .padding(AppSpacing.CardPadding),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.lg)
         ) {
-            val subjectsSelected = remember(subjectsState) { subjectsState.any { it.isSelected } }
-            val topicsSelected = remember(topicsState) { topicsState.any { it.isSelected } }
+
+
 
             // SUBJECTS
             FilterCategoryRow(
