@@ -8,6 +8,10 @@ import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -32,6 +36,8 @@ private val topLevelDestinations = listOf(
     TopLevelDestination("dashboard", "Home", Icons.Rounded.Home),
     TopLevelDestination("mcqs", "Practice", Icons.AutoMirrored.Rounded.MenuBook),
     TopLevelDestination("results/last", "Progress", Icons.Rounded.BarChart),
+    TopLevelDestination("mcqs", "Practice", Icons.Rounded.Psychology),
+    TopLevelDestination("results/last", "Progress", Icons.Rounded.ShowChart),
     TopLevelDestination("auth", "Profile", Icons.Rounded.Person)
 )
 

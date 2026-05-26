@@ -9,9 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import com.cglhustle.core.designsystem.theme.CglHustleTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.cglhustle.core.network.auth.AuthRepository
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val isDarkMode by viewModel.isDarkMode.collectAsState()
+            val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
 
             CglHustleTheme(darkTheme = isDarkMode) {
                 Surface(
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val sessionStatus by authRepository.sessionStatus.collectAsState()
+                    val sessionStatus by authRepository.sessionStatus.collectAsStateWithLifecycle()
 
                     LaunchedEffect(sessionStatus) {
                         when (sessionStatus) {
