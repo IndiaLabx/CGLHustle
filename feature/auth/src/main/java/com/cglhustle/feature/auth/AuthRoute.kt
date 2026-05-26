@@ -143,7 +143,7 @@ fun AuthRoute(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Tabs
                     AuthTabs(
@@ -152,6 +152,21 @@ fun AuthRoute(
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    GoogleAuthButton(
+                        isLoading = uiState.isGoogleLoading,
+                        onClick = { viewModel.signInWithGoogle(it) }
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                        Text("Or use email", modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     EmailAuthForm(
                         uiState = uiState,
@@ -162,21 +177,6 @@ fun AuthRoute(
                         onAgeCheckedChanged = { viewModel.onAgeCheckedChanged(it) },
                         onPrivacyCheckedChanged = { viewModel.onPrivacyCheckedChanged(it) },
                         onSubmit = { viewModel.submitEmailForm() }
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
-                        Text("Or continue with", modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    GoogleAuthButton(
-                        isLoading = uiState.isGoogleLoading,
-                        onClick = { viewModel.signInWithGoogle(it) }
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))

@@ -17,8 +17,6 @@ import com.cglhustle.core.network.auth.AuthRepository
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.gotrue.SessionStatus
 import javax.inject.Inject
-import kotlinx.coroutines.flow.first
-import com.cglhustle.core.ui.theme.ThemePreferences
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
