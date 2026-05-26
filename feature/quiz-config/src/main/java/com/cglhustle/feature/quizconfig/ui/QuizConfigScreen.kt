@@ -88,8 +88,8 @@ fun QuizConfigScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedBackground(
-            mode = uiState.selectedMode,
-            scrollState = scrollState
+
+
         )
 
         Scaffold(
