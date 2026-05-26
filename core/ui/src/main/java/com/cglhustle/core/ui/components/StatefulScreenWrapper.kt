@@ -4,16 +4,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cglhustle.core.common.error.AppError
@@ -26,14 +33,21 @@ import com.cglhustle.core.ui.state.UiState
 fun <T> StatefulScreenWrapper(
     uiState: UiState<T>,
     onRetry: () -> Unit = {},
+    loadingContent: @Composable () -> Unit = { DefaultLoadingSkeleton() },
     content: @Composable (T) -> Unit
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState) {
+        if (uiState is UiState.Success && uiState.transientError != null) {
+            snackbarHostState.showSnackbar(uiState.transientError.toUserFriendlyMessage())
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when (uiState) {
             is UiState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                loadingContent()
             }
             is UiState.Error -> {
                 ErrorView(
@@ -46,15 +60,45 @@ fun <T> StatefulScreenWrapper(
                 content(uiState.data)
 
                 if (uiState.transientError != null) {
-                    TransientErrorView(
-                        error = uiState.transientError,
+                    LinearProgressIndicator(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp)
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
                     )
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
+    }
+}
+
+@Composable
+fun DefaultLoadingSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+    ) {
+        repeat(6) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(if (it == 0) 80.dp else 56.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                )
+            }
+        }
+        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
 
