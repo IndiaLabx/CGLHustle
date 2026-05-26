@@ -18,7 +18,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs = listOf("-Xsuppress-warning=DEPRECATION")
+
     }
     buildFeatures {
         compose = true

@@ -10,9 +10,12 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +35,7 @@ import java.time.LocalTime
 private val primaryCards = listOf(
     DashboardCardModel("Continue Quiz", "Jump back in", Icons.Rounded.PlayArrow, "mcqs"),
     DashboardCardModel("Create Quiz", "Customize filters", Icons.Rounded.Tune, "create_quiz"),
-    DashboardCardModel("Progress", "See results", Icons.Rounded.ShowChart, "analytics"),
+    DashboardCardModel("Progress", "See results", Icons.AutoMirrored.Rounded.ShowChart, "analytics"),
     DashboardCardModel("Bookmarks", "Saved questions", Icons.Rounded.Bookmarks, "bookmarks")
 )
 
