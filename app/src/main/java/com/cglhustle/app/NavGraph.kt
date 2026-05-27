@@ -4,13 +4,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -35,8 +31,6 @@ private data class TopLevelDestination(val route: String, val label: String, val
 private val topLevelDestinations = listOf(
     TopLevelDestination("dashboard", "Home", Icons.Rounded.Home),
     TopLevelDestination("mcqs", "Practice", Icons.AutoMirrored.Rounded.MenuBook),
-    TopLevelDestination("results/last", "Progress", Icons.Rounded.BarChart),
-    TopLevelDestination("mcqs", "Practice", Icons.Rounded.Psychology),
     TopLevelDestination("results/last", "Progress", Icons.AutoMirrored.Rounded.ShowChart),
     TopLevelDestination("auth", "Profile", Icons.Rounded.Person)
 )
@@ -48,6 +42,7 @@ fun AppNavGraph(
     onThemeToggle: () -> Unit = {},
     isDarkMode: Boolean = false
 ) {
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = currentRoute in setOf("dashboard", "mcqs")
@@ -80,16 +75,16 @@ fun AppNavGraph(
             startDestination = startDestination,
             modifier = androidx.compose.ui.Modifier.padding(innerPadding)
         ) {
-        composable("auth") {
-            AuthRoute(
+            composable("auth") {
+                AuthRoute(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
             )
         }
 
-        composable("dashboard") {
-            DashboardRoute(
+            composable("dashboard") {
+                DashboardRoute(
                 onNavigateToMcq = {
                     navController.navigate("mcqs")
                 },
@@ -101,23 +96,23 @@ fun AppNavGraph(
             )
         }
 
-        composable("mcqs") {
-            McqRoute(
+            composable("mcqs") {
+                McqRoute(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToCreateQuiz = { navController.navigate("quizConfig") }
             )
         }
 
-        composable("quizConfig") {
-            QuizConfigRoute(
+            composable("quizConfig") {
+                QuizConfigRoute(
                 onConfigComplete = { sessionId ->
                     navController.navigate("activeSession/$sessionId")
                 }
             )
         }
 
-        composable("activeSession/{sessionId}") {
-            ActiveSessionRoute(
+            composable("activeSession/{sessionId}") {
+                ActiveSessionRoute(
                 onSessionComplete = { completedSessionId ->
                     navController.navigate("results/$completedSessionId") {
                         popUpTo("activeSession/{sessionId}") { inclusive = true }
@@ -126,8 +121,8 @@ fun AppNavGraph(
             )
         }
 
-        composable("results/{sessionId}") {
-            ResultsRoute(
+            composable("results/{sessionId}") {
+                ResultsRoute(
                 onDone = {
                     navController.navigate("dashboard") {
                         popUpTo("dashboard") { inclusive = false }
