@@ -26,9 +26,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForwardIos
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -54,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -117,28 +123,31 @@ fun AuthRoute(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.size(64.dp).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Rounded.Psychology,
+                                imageVector = Icons.Filled.Security,
                                 contentDescription = "Logo",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text("CGL Hustle", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                        Column {
+                            Text("CGL Hustle", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onBackground)
+                            Text("Your growth, our hustle.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
                     // Title
                     Text(
-                        text = if (uiState.isSignUpMode) "Create an account" else "Welcome back",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                        text = if (uiState.isSignUpMode) "Create account" else "Welcome back",
+                        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = if (uiState.isSignUpMode) "Join the community and start learning" else "Enter your details to access your account",
+                        text = if (uiState.isSignUpMode) "Join and start your journey" else "Sign in to continue to your account",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
@@ -150,6 +159,8 @@ fun AuthRoute(
                         isSignUp = uiState.isSignUpMode,
                         onTabSelected = { viewModel.onTabSwitched(it) }
                     )
+
+                    HorizontalDivider(modifier = Modifier.padding(top = 14.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -182,17 +193,34 @@ fun AuthRoute(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     if (!uiState.isSignUpMode) {
-                        Text(
-                            text = "Continue as Guest (Click Here)",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            modifier = Modifier.clickable { viewModel.signInWithGuest() }
-                        )
+                        Button(
+                            onClick = { viewModel.signInWithGuest() },
+                            modifier = Modifier.fillMaxWidth().height(76.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        ) {
+                            Icon(Icons.Outlined.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
+                                Text("Continue as Guest", fontWeight = FontWeight.Medium)
+                                Text("Explore the app without signing in", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                            Icon(Icons.AutoMirrored.Outlined.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
+                        }
 
                         if (uiState.isGuestLoading) {
                             Spacer(modifier = Modifier.height(8.dp))
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.primary)
                         }
+
+                        Spacer(modifier = Modifier.height(28.dp))
+                        Icon(Icons.Outlined.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Your data is secure with us.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                        Text("We never share your information.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -236,7 +264,7 @@ fun TabItem(text: String, isSelected: Boolean, onClick: () -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
         Box(
             modifier = Modifier
-                .width(40.dp)
+                .width(140.dp)
                 .height(3.dp)
                 .clip(CircleShape)
                 .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
@@ -279,8 +307,8 @@ fun GoogleAuthButton(isLoading: Boolean, onClick: (String) -> Unit) {
             .fillMaxWidth()
             .height(56.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -288,9 +316,9 @@ fun GoogleAuthButton(isLoading: Boolean, onClick: (String) -> Unit) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.primary)
         } else {
             // Replaced generic text with 'G' to simulate Google without drawable
-            Text("G", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            Text("G", fontWeight = FontWeight.Bold, fontSize = 28.sp, color = Color(0xFF4285F4))
             Spacer(modifier = Modifier.width(12.dp))
-            Text("Continue with Google", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Continue with Google", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -325,15 +353,17 @@ fun EmailAuthForm(
             CustomTextField(
                 value = uiState.emailInput,
                 onValueChange = onEmailChanged,
-                label = "Email Address",
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
+                    label = "Email Address",
+                    leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
             )
 
             CustomTextField(
                 value = uiState.passwordInput,
                 onValueChange = onPasswordChanged,
                 label = "Password",
+                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                 keyboardType = KeyboardType.Password,
                 imeAction = if (isSignUp) ImeAction.Next else ImeAction.Done,
                 isPassword = true,
@@ -375,7 +405,7 @@ fun EmailAuthForm(
             } else {
                  Text(
                     "Forgot Password?",
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.End)
                 )
@@ -408,16 +438,31 @@ fun EmailAuthForm(
                     .height(56.dp)
                     .padding(top = 8.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onPrimary),
                 enabled = !uiState.isEmailLoading
             ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF1B72FF), Color(0xFF3650FF))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                 if (uiState.isEmailLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
-                    Text(
-                        text = if (isSignUp) "Sign Up" else "Sign In",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = if (isSignUp) "Sign Up" else "Sign In",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Icon(Icons.AutoMirrored.Outlined.ArrowForwardIos, contentDescription = null)
+                        }
+                    }
                 }
             }
         }
@@ -434,7 +479,8 @@ fun CustomTextField(
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
     onPasswordVisibilityChange: (Boolean) -> Unit = {},
-    onImeAction: () -> Unit = {}
+    onImeAction: () -> Unit = {},
+    leadingIcon: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -446,6 +492,7 @@ fun CustomTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
         keyboardActions = KeyboardActions(onAny = { onImeAction() }),
         visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+        leadingIcon = leadingIcon,
         trailingIcon = {
             if (isPassword) {
                 IconButton(onClick = { onPasswordVisibilityChange(!passwordVisible) }) {
